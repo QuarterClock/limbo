@@ -1,0 +1,32 @@
+[run]
+source = ["src"]
+relative_files = true
+branch = true
+concurrency = ["greenlet", "thread"]
+
+[report]
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+
+    # Don't compalain about type annotations
+    "if TYPE_CHECKING:",
+]
+skip_empty = true
+skip_covered = true
+ignore_errors = true
+sort = "cover"
+
+[html]
+directory = "coverage_html_report"

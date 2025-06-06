@@ -1,0 +1,35 @@
+[project]
+name = "limbo"
+version = "0.1.0"
+description = "A better Alembic"
+readme = "README.rst"
+authors = [
+    { name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy>=2.0.41",
+]
+
+[project.scripts]
+limbo = "limbo:main"
+
+[build-system]
+requires = ["setuptools>=46.1.0", "setuptools_scm[toml]>=5"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "coverage>=7.8.2",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.0",
+]
+docs = [
+    "sphinx>=8.2.3",
+]
+lint = [
+    "mypy>=1.16.0",
+    "ruff>=0.11.13",
+    "doc8>=1.1.2",
+    "rstcheck>=6.2.5",
+]

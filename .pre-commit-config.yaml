@@ -1,0 +1,51 @@
+exclude: '^docs/conf.py'
+
+default_language_version:
+    python: python3.11
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+    - id: check-added-large-files
+    - id: check-case-conflict
+    - id: check-illegal-windows-names
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+    - id: check-symlinks
+    - id: destroyed-symlinks
+    - id: check-toml
+    - id: check-yaml
+    - id: no-commit-to-branch
+      args: [--branch, main, --branch, master, --branch, develop]
+  - repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.33.0
+    hooks:
+      - id: check-github-actions
+      - id: check-github-workflows
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.13
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+    - id: codespell
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.11
+    hooks:
+      - id: uv-lock
+      - id: uv-export
+        args: ["--group=docs", "--format=requirements.txt", "--output-file=docs/requirements.txt"]
+  # TODO(Vlad): Replace with ty
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        args: [--install-types, --non-interactive]
+        language: system
+        types: [python]
+        require_serial: true
