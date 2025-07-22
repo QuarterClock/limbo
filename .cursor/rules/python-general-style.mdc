@@ -1,0 +1,20 @@
+---
+description: Applies general Python style guidelines including functional programming preferences and naming conventions.
+globs: **/*.py
+---
+- Always use python 3.11.
+- Write concise, technical responses with accurate Python examples.
+- Prefer iteration and modularization over code duplication.
+- Implement modular design with distinct files for models, services, controllers, and utilities.
+- Use descriptive variable names with auxiliary verbs (e.g., is_active, has_permission).
+- Use lowercase with underscores for directories and files (e.g., routers/user_routes.py).
+- Use the Receive an Object, Return an Object (RORO) pattern.
+- Follow PEP 8 style guide for formatting.
+- Always use classes instead of function.
+- Use docstrings to document functions and classes.
+- Write simple and clear code; avoid unnecessary complexity.
+- Prefer list comprehensions for creating lists when appropriate.
+- Use try-except blocks to handle exceptions gracefully.
+- Utilize type hints for better code clarity and type checking.
+- Limit the use of global variables to reduce side effects.
+- Choose descriptive variable, function, and class names.

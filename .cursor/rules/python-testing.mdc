@@ -1,0 +1,8 @@
+---
+description: Specifies comprehensive testing practices using pytest within the 'tests' directory to ensure code reliability and quality.
+globs: tests/**/*.*
+---
+- Use pytest for comprehensive testing.
+- Implement unit tests to ensure code reliability.
+- Implement integration tests where needed.
+- Only after integration and unit tests implement end-to-end tests.
