@@ -30,6 +30,6 @@
 limbo
 ========
 
-    Better Alembic without other rings of hell.
+    A better place for data generation.
 
     .. todo:: add more details

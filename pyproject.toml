@@ -1,15 +1,13 @@
 [project]
 name = "limbo"
 version = "0.1.0"
-description = "A better Alembic"
+description = "A better place for data generation"
 readme = "README.rst"
 authors = [
     { name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = [
-    "sqlalchemy>=2.0.41",
-]
+dependencies = []
 
 [project.scripts]
 limbo = "limbo:main"
