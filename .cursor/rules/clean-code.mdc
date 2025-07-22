@@ -1,0 +1,124 @@
+---
+description: This document outlines key rules for writing clean, readable, and maintainable code, inspired by Robert C. Martin's "Clean Code."
+globs: **/*.py
+---
+## Use Intention-Revealing Names
+
+Variable, function, and class names should be descriptive and reveal their purpose. Avoid single-letter names or abbreviations that obscure meaning. A good name makes the code easier to understand without needing comments.
+
+Bad: `d = 0 # elapsed time in days`
+
+Good: `elapsed_time_in_days = 0`
+
+## Functions Should Do One Thing
+
+Functions should have a single responsibility and do it well. A function that performs multiple, unrelated operations should be broken down into smaller, more focused functions. This improves reusability and testability.
+
+Bad:
+
+```python
+def handle_form_submit(form_data):
+  # 1. Validate data
+  # 2. Save to database
+  # 3. Log the action
+  pass
+```
+
+Good:
+
+```python
+validate_input(form_data)
+save_to_database(form_data)
+log_action("Form Submitted")
+```
+
+## Keep Functions Small
+
+Functions should be small, ideally no more than 20 lines long. Smaller functions are easier to read, understand, and debug. If a function is too long, it's a sign that it's likely doing more than one thing.
+
+## Limit Function Arguments
+
+Aim for zero, one, or two arguments in a function. More than three arguments is a code smell and can make the function difficult to use and test. Consider passing an object or dictionary as a single argument if multiple values are needed.
+
+Bad: `create_menu("File", "Open", "Ctrl+O", True)`
+
+Good: `create_menu(title="File", body="Open", shortcut="Ctrl+O", is_cancellable=True)`
+
+## Avoid Redundant Comments
+
+Don't write comments that simply restate what the code does. The code should be self-documenting. If you feel the need to add a comment, first try to refactor the code to make it clearer.
+
+Bad: `i += 1 # Increment i`
+
+Good: `i += 1`
+
+## Prefer Code Over Comments
+
+Instead of using comments to explain complex logic, refactor the logic into well-named functions. Good code is its own best documentation. Comments can become outdated and misleading over time.
+
+Bad:
+
+```python
+# Check if the user is eligible for a discount
+if (user.age > 65 and user.is_member) or user.is_veteran:
+  # ...
+  pass
+```
+
+Good:
+
+```python
+if is_eligible_for_discount(user):
+  # ...
+  pass
+```
+
+## Use Vertical Density for Readability
+
+Group related lines of code together, separated by blank lines from other groups. This creates visual cues that help readers quickly understand the structure of the code.
+
+## Use Exceptions Instead of Error Codes
+
+Returning error codes from functions can clutter the caller's logic with conditional checks. Throwing exceptions is a cleaner, more modern way to handle errors, separating the error-handling logic from the main program flow.
+
+Bad:
+
+```python
+result = get_user(-1)
+if result == 'ERROR_NOT_FOUND':
+  # Handle error...
+  pass
+```
+
+Good:
+
+```python
+try:
+  user = get_user(-1)
+except UserNotFoundError as e:
+  # Handle error...
+  pass
+```
+
+## Don't Repeat Yourself (DRY)
+
+Avoid duplicating code. Duplication is a common source of bugs and makes maintenance difficult. If you find yourself copying and pasting code, abstract it into a reusable function or class.
+
+## Write Clean and Readable Tests
+
+Tests are as important as production code and should be treated with the same care. A test should be clear, concise, and focused on a single behavior. This ensures that your tests are maintainable and serve as living documentation.
+
+Good Example (Arrange, Act, Assert with pytest):
+
+```python
+def test_sum_of_two_numbers():
+  # Arrange
+  a = 5
+  b = 10
+
+  # Act
+  result = sum_numbers(a, b)
+
+  # Assert
+  assert result == 15
+```

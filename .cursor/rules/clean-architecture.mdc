@@ -1,0 +1,228 @@
+---
+description: This document outlines key rules for structuring software applications based on Robert C. Martin's "Clean Architecture." The goal is to create systems with a clear separation of concerns, making them independent, testable, and easier to maintain over time.
+globs: **/*.py
+---
+## The Dependency Rule: Dependencies Point Inwards
+
+All source code dependencies must point from outer layers to inner layers. Nothing in an inner layer can know anything about an outer layer. For example, business logic (Use Cases) should not depend on a web framework (UI).
+
+Bad: A business logic class imports and uses a web framework's request object.
+
+```python
+# use_case.py (Inner Layer)
+from flask import request # <-- VIOLATION: Inner layer depends on outer layer (Flask)
+
+def register_user():
+    user_data = request.get_json()
+    # ... business logic
+```
+
+Good: The web framework's data is passed to the business logic as a simple data structure.
+
+```python
+# controller.py (Outer Layer)
+from flask import request, jsonify
+from use_cases import register_user # <-- Correct dependency direction
+
+@app.route('/register', methods=['POST'])
+def handle_registration():
+    user_data = request.get_json()
+    result = register_user(user_data) # Pass simple data inwards
+    return jsonify(result)
+
+# use_case.py (Inner Layer)
+def register_user(user_data: dict):
+    # ... business logic using the dictionary
+    pass
+```
+
+## Entities Encapsulate Core Business Rules
+
+Entities represent the highest-level business concepts and rules of the application. They should be plain objects with methods that enforce business logic, independent of any application-specific logic.
+
+Bad: An entity is just a dictionary or a simple data class with no behavior.
+
+```python
+# Anemic entity
+class Order:
+    def __init__(self):
+        self.status = "created"
+        self.items = []
+```
+
+Good: An entity contains methods that enforce its own rules.
+
+```python
+class Order:
+    def __init__(self):
+        self._status = "created"
+        self._items = []
+
+    def add_item(self, item):
+        if self._status != "created":
+            raise ValueError("Cannot add items to an order that is not in 'created' state.")
+        self._items.append(item)
+
+    def submit(self):
+        if not self._items:
+            raise ValueError("Cannot submit an empty order.")
+        self._status = "submitted"
+```
+
+## Use Cases Dictate Application-Specific Logic
+
+Use Cases (or Interactors) orchestrate the flow of data between entities and the outer layers. They contain the application-specific business rules and are triggered by external events (like an HTTP request).
+
+Example: A use case that orchestrates the process of placing an order.
+
+```python
+class PlaceOrder:
+    def __init__(self, order_repository, payment_gateway):
+        self.order_repository = order_repository
+        self.payment_gateway = payment_gateway
+
+    def execute(self, user_id, item_data):
+        order = Order(user_id=user_id)
+        for item in item_data:
+            order.add_item(item)
+
+        self.payment_gateway.charge(order.total, user_id)
+        self.order_repository.save(order)
+        return order
+```
+
+## Interface Adapters Convert Data
+
+This layer (containing presenters, controllers, gateways) converts data between the format needed by the Use Cases and Entities, and the format needed by external agencies like the database or the web.
+
+Example: A repository implementation that adapts a use case's needs to a specific database technology (e.g., SQL).
+
+```python
+# Defined in the Use Case layer
+from abc import ABC, abstractmethod
+class OrderRepositoryInterface(ABC):
+    @abstractmethod
+    def save(self, order: Order):
+        pass
+
+# Implemented in the Interface Adapters layer
+class SqlOrderRepository(OrderRepositoryInterface):
+    def save(self, order: Order):
+        # Code to convert the Order entity to SQL rows and save to the DB
+        # e.g., using SQLAlchemy or another ORM
+        pass
+```
+
+## Frameworks and Drivers are Details
+
+The outermost layer consists of frameworks (e.g., Flask, Django), database drivers, and other tools. Your application should not be tightly coupled to them. They are plugins to the architecture.
+
+Principle: Your business logic should be able to function without a web server running. You should be able to swap your database or web framework without rewriting the core business rules.
+
+## Cross Boundaries with Dependency Inversion
+
+To keep dependencies pointing inwards, use interfaces (Abstract Base Classes in Python). Inner layers define interfaces, and outer layers provide concrete implementations. This inverts the control flow.
+
+Bad: A use case directly instantiates a concrete repository.
+
+```python
+# use_case.py
+from infrastructure import SqlOrderRepository # <-- VIOLATION
+
+class PlaceOrder:
+    def __init__(self):
+        self.order_repository = SqlOrderRepository() # Tight coupling
+    # ...
+```
+
+Good: The use case depends on an abstraction, and the concrete implementation is injected from the outside (e.g., by a dependency injection container or a factory).
+
+```python
+# use_case.py
+from application.ports import OrderRepositoryInterface # Depends on an interface
+
+class PlaceOrder:
+    def __init__(self, order_repository: OrderRepositoryInterface):
+        self.order_repository = order_repository
+    # ...
+
+# main.py (The "main" component wires everything together)
+from infrastructure import SqlOrderRepository
+from use_cases import PlaceOrder
+
+order_repo = SqlOrderRepository()
+place_order_use_case = PlaceOrder(order_repository=order_repo)
+```
+
+## Data Across Boundaries Must Be Simple
+
+When data crosses a boundary, it should be in a simple, isolated data structure (like a dictionary or a dataclass). Do not pass complex objects like database models or request objects inwards from an outer layer. This prevents the inner layers from becoming transitively dependent on the outer layers.
+
+Bad: Passing a SQLAlchemy ORM model directly to a use case.
+
+```python
+# controller.py
+def handle_update_user(user_id):
+    orm_user = db_session.query(UserDBModel).get(user_id)
+    update_user_email_use_case.execute(orm_user, "new@email.com") # <-- VIOLATION
+```
+
+Good: The controller converts the ORM model to a simple data structure before passing it to the use case.
+
+```python
+# controller.py
+def handle_update_user(user_id):
+    orm_user = db_session.query(UserDBModel).get(user_id)
+    user_data = {"id": orm_user.id, "name": orm_user.name} # Convert to dict
+    update_user_email_use_case.execute(user_data, "new@email.com")
+```
+
+## Presenters Format Data for the View
+
+A Presenter is a type of Interface Adapter that takes data from a use case response and formats it into a "View Model" for display. This keeps UI-specific formatting logic out of the use cases and entities.
+
+Example: A presenter transforms a datetime object into a user-friendly string.
+
+```python
+# use_case.py
+def get_user_details(user_id):
+    # ... returns an entity
+    return User(id=user_id, name="Jane Doe", created_at=datetime(2023, 10, 27))
+
+# presenter.py
+class UserPresenter:
+    def present(self, user_entity):
+        return {
+            "name": user_entity.name.title(),
+            "member_since": user_entity.created_at.strftime("%B %d, %Y") # UI-specific formatting
+        }
+```
+
+# The main Component Wires Everything Together
+
+The application's entry point (often called main, app, or the Composition Root) is the one place that is allowed to be "dirty." It is responsible for creating concrete instances of repositories, gateways, and other dependencies and injecting them into the use cases.
+
+Principle: This component is the glue that holds the application together. It builds the object graph and starts the application. All other components should rely on abstractions, but main builds the concrete implementations.
+
+## Test Layers in Isolation
+
+The architecture's separation of concerns makes testing much easier. Each layer can be tested independently by providing mock or fake implementations of the interfaces it depends on.
+
+Example: Testing a use case by mocking its repository dependency.
+
+```python
+# test_place_order.py
+from unittest.mock import Mock
+
+def test_place_order_saves_to_repository():
+    # Arrange: Create a mock repository
+    mock_repo = Mock(spec=OrderRepositoryInterface)
+    mock_gateway = Mock()
+    use_case = PlaceOrder(order_repository=mock_repo, payment_gateway=mock_gateway)
+
+    # Act
+    use_case.execute(user_id=1, item_data=[{"name": "Test Item"}])
+
+    # Assert: Verify the repository's save method was called
+    mock_repo.save.assert_called_once()
+```
