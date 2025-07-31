@@ -37,8 +37,6 @@ repos:
     rev: 0.7.11
     hooks:
       - id: uv-lock
-      - id: uv-export
-        args: ["--group=docs", "--format=requirements.txt", "--output-file=docs/requirements.txt"]
   # TODO(Vlad): Replace with ty
   - repo: local
     hooks:
