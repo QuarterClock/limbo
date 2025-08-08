@@ -19,3 +19,8 @@ A better place for data generation.
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter)](https://twitter.com/limbo)
 [![Project generated with PyScaffold](https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold)](https://pyscaffold.org/)
 -->
+
+## TODOs
+
+1. Integrate rumdl
+2. Try to use mypy as a tool
