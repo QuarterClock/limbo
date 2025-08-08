@@ -16,15 +16,16 @@ repos:
     - id: destroyed-symlinks
     - id: check-toml
     - id: check-yaml
-    - id: no-commit-to-branch
-      args: [--branch, main, --branch, master, --branch, develop]
+    # TODO(Vlad): Add this back in when ready
+    # - id: no-commit-to-branch
+    #   args: [--branch, main, --branch, master, --branch, develop]
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.33.0
+    rev: 0.33.2
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.12.8
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -34,7 +35,7 @@ repos:
     hooks:
     - id: codespell
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.11
+    rev: 0.8.6
     hooks:
       - id: uv-lock
   # TODO(Vlad): Replace with ty

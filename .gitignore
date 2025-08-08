@@ -19,8 +19,6 @@ __pycache__/*
 .project
 .pydevproject
 .settings
-.idea
-.vscode
 tags
 
 # Package files
@@ -36,16 +34,3 @@ htmlcov/*
 .tox
 junit*.xml
 coverage.xml
-.pytest_cache/
-
-# Build and docs folder/files
-build/*
-dist/*
-sdist/*
-docs/api/*
-docs/_rst/*
-docs/_build/*
-cover/*
-MANIFEST
-
-# Per-project virtualenvs
