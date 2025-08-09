@@ -28,6 +28,11 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.0.112
+    hooks:
+      - id: rumdl
+        args: [--fix]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
