@@ -1,0 +1,37 @@
+version: 0.0.1
+
+tables:
+  - name: comments_data
+    description: A table for comments
+    alias: comments
+    columns:
+      - name: id
+        data_type: integer
+        generator: primary_key.incrementing_id
+      - name: post_id
+        data_type: integer
+        generator: foreign_key.key
+        options:
+          reference: posts_data.id
+      - name: user_id
+        data_type: integer
+        generator: foreign_key.key
+        options:
+          reference: users_data.id
+      - name: content
+        data_type: string
+        generator: llm.generate
+        options:
+          prompt: "Generate a comment for the post {{ references.posts_data.title }}."
+      - name: created_at
+        data_type: timestamp
+        generator: timestamp.random
+        options:
+          start_date:
+            reference: posts_data.created_at
+          end_date: 2025-01-01
+    references:
+      - table: posts_data
+        relationship: one_to_one
+      - table: users_data
+        relationship: one_to_one

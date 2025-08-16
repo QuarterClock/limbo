@@ -1,11 +1,9 @@
 [project]
-name = "limbo"
+name = "limbo_core"
 version = "0.0.1a1"
 description = "A better place for data generation"
 readme = "README.md"
-authors = [
-    { name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" }
-]
+authors = [{ name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -36,13 +34,13 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "loguru>=0.7.3",
-    "ruamel-yaml>=0.18.14",
+    "pydantic>=2.11.7",
+    "pydantic-yaml>=1.6.0",
     "sqlglot>=27.7.0",
-    "typer>=0.16.0",
 ]
 
 [project.scripts]
-limbo = "limbo:main"
+limbo_core = "limbo_core:main"
 
 [build-system]
 requires = ["uv_build>=0.8.6,<0.9.0"]
@@ -58,7 +56,4 @@ dev = [
     "mkdocs-material>=9.6.0",
     "mkdocstrings[python]>=0.30.0",
 ]
-tests = [
-    "coverage>=7.8.2",
-    "pytest>=8.4.0",
-]
+tests = ["coverage>=7.8.2", "pytest>=8.4.0"]

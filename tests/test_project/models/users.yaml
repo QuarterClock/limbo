@@ -1,0 +1,34 @@
+version: 0.0.1
+
+tables:
+  - name: users_data
+    description: A table for users
+    alias: users
+    config:
+      materialize: true
+    columns:
+      - name: id
+        data_type: integer
+        generator: primary_key.incrementing_id
+      - name: full_name
+        data_type: string
+        generator: pii.full_name
+      - name: email
+        data_type: string
+        generator: pii.email
+      - name: password
+        data_type: string
+        generator: pii.password
+      - name: created_at
+        data_type: timestamp
+        generator: timestamp.random
+        options:
+          start_date: 2020-01-01
+          end_date: 2025-01-01
+      - name: updated_at
+        data_type: timestamp
+        generator: timestamp.random
+        options:
+          start_date:
+            reference: this.created_at
+          end_date: 2025-01-01
