@@ -12,24 +12,28 @@ tables:
         data_type: integer
         generator: foreign_key.key
         options:
-          reference: posts_data.id
+          reference: "${ref:posts_data.id}"
       - name: user_id
         data_type: integer
         generator: foreign_key.key
         options:
-          reference: users_data.id
+          reference: "${ref:users_data.id}"
+      - name: user_full_name
+        data_type: string
+        generator: foreign_key.value
+        options:
+          reference: "${ref:users_data.full_name}"
       - name: content
         data_type: string
         generator: llm.generate
         options:
           prompt: "Generate a comment for the post {{ references.posts_data.title }}."
       - name: created_at
-        data_type: timestamp
-        generator: timestamp.random
+        data_type: datetime
+        generator: datetime.random
         options:
-          start_date:
-            reference: posts_data.created_at
-          end_date: 2025-01-01
+          start_date: "${ref:posts_data.created_at}"
+          end_date: "2025-01-01"
     references:
       - table: posts_data
         relationship: one_to_one

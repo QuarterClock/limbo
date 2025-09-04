@@ -27,12 +27,7 @@ exclude = [
     "site-packages",
     "venv",
 ]
-include = [
-    "pyproject.toml",
-    "src/**/*.py",
-    "tests/**/*.py",
-    "bin/**/*.py",
-]
+include = ["pyproject.toml", "src/**/*.py", "tests/**/*.py", "bin/**/*.py"]
 
 line-length = 80
 indent-width = 4
@@ -49,53 +44,53 @@ preview = true
 
 [lint]
 select = [
-    "UP", # pyupgrade
-    "N", # pep8-naming
-    "F",  # pyflakes
-    "I",  # isort
-    "C",  # pycodestyle conventions
-    "E",  # pycodestyle errors
-    "R",  # pycodestyle refactoring
-    "W",  # pycodestyle warnings
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "ASYNC",  # flake8-async
-    "A",  # flake8-builtins
-    "PIE",  # flake8-pie
-    "T20",  # flake8-print
-    "RET",  # flake8-return
-    "SIM",  # flake8-simplify
-    "TD",  # flake8-todo
-    "T10",  # flake8-debugger
-    "FA",  # flake8-future-annotations
-    "ICN",  # flkae8-import-conventions
-    "LOG",  # flake8-logging
-    "G",  # flake8-logging-format
-    "PYI",  # flake8-pyi
-    "Q",  # flake8-quotes
-    "RSE",  # flake8-raise
-    "TID",  # flake8-tidy-imports
-    "TCH",  # flake8-type-checking
-    "INT",  # flake8-gettext
-    "PTH",  # flake8-use-pathlib
-    "PGH",  # pygrep-hooks
-    "FLY",  # flynt
-    "ERA",  # find commented out code
+    "UP",    # pyupgrade
+    "N",     # pep8-naming
+    "F",     # pyflakes
+    "I",     # isort
+    "C",     # pycodestyle conventions
+    "E",     # pycodestyle errors
+    "R",     # pycodestyle refactoring
+    "W",     # pycodestyle warnings
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "ASYNC", # flake8-async
+    "A",     # flake8-builtins
+    "PIE",   # flake8-pie
+    "T20",   # flake8-print
+    "RET",   # flake8-return
+    "SIM",   # flake8-simplify
+    "TD",    # flake8-todo
+    "T10",   # flake8-debugger
+    "FA",    # flake8-future-annotations
+    "ICN",   # flkae8-import-conventions
+    "LOG",   # flake8-logging
+    "G",     # flake8-logging-format
+    "PYI",   # flake8-pyi
+    "Q",     # flake8-quotes
+    "RSE",   # flake8-raise
+    "TID",   # flake8-tidy-imports
+    "TCH",   # flake8-type-checking
+    "INT",   # flake8-gettext
+    "PTH",   # flake8-use-pathlib
+    "PGH",   # pygrep-hooks
+    "FLY",   # flynt
+    "ERA",   # find commented out code
     "PERF",  # performance,
-    "RUF",  # ruff specific rules
-    "C90",  # mccabe complexity
-    "PT",  # flake8-pytest-style
-    "TRY",  # tryceratops styles
-    "INP",  # flake8-no-pep420
+    "RUF",   # ruff specific rules
+    "C90",   # mccabe complexity
+    "PT",    # flake8-pytest-style
+    "TRY",   # tryceratops styles
+    "INP",   # flake8-no-pep420
     "FURB",  # refurb
-    "DTZ",  # flake8-datetimez
+    "DTZ",   # flake8-datetimez
 ]
 ignore = [
-    "RET504",  # Unnecessary assignment before return
+    "RET504", # Unnecessary assignment before return
     "TD003",  # Missing issue link on the line following todo comment
-    # TODO(Vlad): Maybe ignore these?
-    # "TRY003",  # Avoid specifying long messages outside the exception class
-    # "PT011",  # Too broad exception clause in tests
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "TRY004", # Prefer TypeError exception for invalid type
+    "TRY300", # Consider moving this statement to an else block
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.

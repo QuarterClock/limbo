@@ -8,15 +8,18 @@ tables:
       - name: id
         data_type: integer
         generator: primary_key.incrementing_id
+        options:
+          starting_from: 1
       - name: user_id
         data_type: integer
         generator: foreign_key.key
         options:
-          reference: users_data.id
+          reference: "${ref:users_data.id}"
       - name: title
         data_type: string
         generator: llm.generate
         options:
+          # TODO(Vlad): fix prompt to use the reference.
           prompt: "Generate a title for a post about the user's day. The user's name is {{ references.users_data.full_name }}."
       - name: content
         data_type: string
@@ -25,19 +28,17 @@ tables:
           sentences: 10
           locale: en_US
       - name: created_at
-        data_type: timestamp
-        generator: timestamp.random
+        data_type: datetime
+        generator: datetime.random
         options:
-          start_date:
-            reference: users_data.created_at
-          end_date: 2025-01-01
+          start_date: "${ref:users_data.created_at}"
+          end_date: "2025-01-01"
       - name: updated_at
-        data_type: timestamp
-        generator: timestamp.random
+        data_type: datetime
+        generator: datetime.random
         options:
-          start_date:
-            reference: this.created_at
-          end_date: 2025-01-01
+          start_date: "${ref:this.created_at}"
+          end_date: "2025-01-01"
     references:
       - table: users_data
         relationship: one_to_many

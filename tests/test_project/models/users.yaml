@@ -20,15 +20,14 @@ tables:
         data_type: string
         generator: pii.password
       - name: created_at
-        data_type: timestamp
-        generator: timestamp.random
+        data_type: datetime
+        generator: datetime.random
         options:
-          start_date: 2020-01-01
-          end_date: 2025-01-01
+          start_date: "2020-01-01"
+          end_date: "2025-01-01"
       - name: updated_at
-        data_type: timestamp
-        generator: timestamp.random
+        data_type: datetime
+        generator: datetime.random
         options:
-          start_date:
-            reference: this.created_at
-          end_date: 2025-01-01
+          start_date: "2020-01-01"
+          end_date: "2025-01-01"
