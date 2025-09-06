@@ -17,6 +17,13 @@
     ],
     "packageRules": [
         {
+            "description": "Do not pin python version in github actions",
+            "matchManagers": ["github-actions"],
+            "matchDepNames": ["python"],
+            "separateMultipleMinor": true,
+            "dependencyDashboardApproval": true
+        },
+        {
             "description": "Group all pre-commit updates into a single PR",
             "matchManagers": ["pre-commit"],
             "groupName": "pre-commit hooks"
