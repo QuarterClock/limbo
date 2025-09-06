@@ -8,6 +8,7 @@
         "enabled": true
     },
     "enabledManagers": [
+        "pyenv",
         "pep621",
         "pre-commit",
         "dockerfile",
@@ -18,7 +19,7 @@
     "packageRules": [
         {
             "description": "Do not pin python version in github actions",
-            "matchManagers": ["github-actions"],
+            "matchManagers": ["github-actions", "pyenv"],
             "matchDepNames": ["python"],
             "separateMultipleMinor": true,
             "dependencyDashboardApproval": true
