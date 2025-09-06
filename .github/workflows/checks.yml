@@ -1,13 +1,8 @@
 name: Perform code checks
 
 on:
-  workflow_dispatch:
   workflow_call:
   push:
-    branches-ignore:
-      - master
-      - main
-      - develop
 
 permissions:
   contents: write
