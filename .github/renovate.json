@@ -7,15 +7,6 @@
     "pre-commit": {
         "enabled": true
     },
-    "enabledManagers": [
-        "pyenv",
-        "pep621",
-        "pre-commit",
-        "dockerfile",
-        "docker-compose",
-        "github-actions",
-        "renovate-config-presets"
-    ],
     "packageRules": [
         {
             "description": "Do not pin python version in github actions",
