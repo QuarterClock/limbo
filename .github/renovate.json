@@ -7,7 +7,14 @@
     "pre-commit": {
         "enabled": true
     },
-    "enabledManagers": ["pre-commit", "pep621"],
+    "enabledManagers": [
+        "pep621",
+        "pre-commit",
+        "docker",
+        "docker-compose",
+        "github-actions",
+        "renovate-config-presets"
+    ],
     "packageRules": [
         {
             "description": "Group all pre-commit updates into a single PR",
@@ -18,16 +25,21 @@
             "description": "Group all pep621 updates into a single PR",
             "matchManagers": ["pep621"],
             "groupName": "pep621"
+        },
+        {
+            "description": "Group all github-actions updates into a single PR",
+            "matchManagers": ["github-actions"],
+            "groupName": "github-actions"
+        },
+        {
+            "description": "Group all renovate-config-presets updates into a single PR",
+            "matchManagers": ["renovate-config-presets"],
+            "groupName": "renovate-config-presets"
+        },
+        {
+            "description": "Group all docker updates into a single PR",
+            "matchManagers": ["docker", "docker-compose"],
+            "groupName": "docker-related"
         }
-    ],
-    "postUpgradeTasks": {
-        "commands": [
-            "pip install uv",
-            "uv lock --all-groups",
-            "uv sync --all-groups",
-            "uv run ruff check --fix",
-            "uv run ruff format"
-        ],
-        "executionMode": "update"
-    }
+    ]
 }
