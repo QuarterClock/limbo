@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="18" time="0.233" timestamp="2025-09-06T22:21:27.434258+03:00" hostname="vvrud-MS-7C35"><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[string-string]" time="0.001" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[integer-integer]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[float-float]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[boolean-boolean]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[date-date]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[datetime-datetime]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type[timestamp-timestamp]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[string-string]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[integer-integer]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[float-float]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[boolean-boolean]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[date-date]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[datetime-datetime]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation[timestamp-timestamp]" time="0.000" /><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation_invalid[invalid]" time="0.000"><failure message="Failed: Test failed">data_type = 'invalid'
+
+    @pytest.mark.parametrize("data_type", ["invalid", "123", "true", "false"])
+    def test_data_type_creation_invalid(data_type):
+&gt;       pytest.fail("Test failed")
+E       Failed: Test failed
+
+tests/yaml_models/test_data_type.py:22: Failed</failure></testcase><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation_invalid[123]" time="0.000"><failure message="Failed: Test failed">data_type = '123'
+
+    @pytest.mark.parametrize("data_type", ["invalid", "123", "true", "false"])
+    def test_data_type_creation_invalid(data_type):
+&gt;       pytest.fail("Test failed")
+E       Failed: Test failed
+
+tests/yaml_models/test_data_type.py:22: Failed</failure></testcase><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation_invalid[true]" time="0.000"><failure message="Failed: Test failed">data_type = 'true'
+
+    @pytest.mark.parametrize("data_type", ["invalid", "123", "true", "false"])
+    def test_data_type_creation_invalid(data_type):
+&gt;       pytest.fail("Test failed")
+E       Failed: Test failed
+
+tests/yaml_models/test_data_type.py:22: Failed</failure></testcase><testcase classname="tests.yaml_models.test_data_type" name="test_data_type_creation_invalid[false]" time="0.000"><failure message="Failed: Test failed">data_type = 'false'
+
+    @pytest.mark.parametrize("data_type", ["invalid", "123", "true", "false"])
+    def test_data_type_creation_invalid(data_type):
+&gt;       pytest.fail("Test failed")
+E       Failed: Test failed
+
+tests/yaml_models/test_data_type.py:22: Failed</failure></testcase></testsuite></testsuites>

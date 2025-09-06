@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  ruff_lint:
+  python_lint:
     name: Python Linting and Formatting checks
     runs-on: ubuntu-latest
     steps:

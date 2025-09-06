@@ -20,7 +20,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
     "Topic :: Database",
     "Topic :: Database :: Front-Ends",
     "Topic :: Scientific/Engineering",
@@ -52,7 +51,7 @@ docs = [
 ]
 typing = [ "mypy>=1.16.0" ]
 linting = [ "ruff>=0.12.12" ]
-tests = [ "coverage[toml]>=7.8.2", "pytest>=8.4.0" ]
+tests = [ "pytest>=8.4.0", "pytest-cov>=6.3.0" ]
 
 [tool.ruff]
 # Assume Python 3.11
@@ -167,7 +166,7 @@ lint.isort.split-on-trailing-comma = false
 column-width = 80
 indent = 4
 keep_full_version = true
-max_supported_python = "3.14"
+max_supported_python = "3.13"
 
 [tool.pytest.ini_options]
 minversion = "8.4.0"

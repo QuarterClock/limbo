@@ -1,0 +1,45 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:best-practices",
+        "schedule:weekly"
+    ],
+    "pre-commit": {
+        "enabled": true
+    },
+    "enabledManagers": [
+        "pep621",
+        "pre-commit",
+        "dockerfile",
+        "docker-compose",
+        "github-actions",
+        "renovate-config-presets"
+    ],
+    "packageRules": [
+        {
+            "description": "Group all pre-commit updates into a single PR",
+            "matchManagers": ["pre-commit"],
+            "groupName": "pre-commit hooks"
+        },
+        {
+            "description": "Group all pep621 updates into a single PR",
+            "matchManagers": ["pep621"],
+            "groupName": "pep621"
+        },
+        {
+            "description": "Group all github-actions updates into a single PR",
+            "matchManagers": ["github-actions"],
+            "groupName": "github-actions"
+        },
+        {
+            "description": "Group all renovate-config-presets updates into a single PR",
+            "matchManagers": ["renovate-config-presets"],
+            "groupName": "renovate-config-presets"
+        },
+        {
+            "description": "Group all docker updates into a single PR",
+            "matchManagers": ["docker", "docker-compose"],
+            "groupName": "docker-related"
+        }
+    ]
+}
