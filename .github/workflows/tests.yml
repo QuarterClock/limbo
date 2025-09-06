@@ -16,13 +16,13 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
     - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install uv
-      uses: astral-sh/setup-uv@v6
+      uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
     - name: Install tests requirements
       run: uv sync --locked --group tests
     - name: Run tests coverage
@@ -53,13 +53,13 @@ jobs:
     #     unique-id-for-comment: tests-${{ matrix.python-version }}
     - name: Upload coverage reports to Codecov
       if: always() && matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.xml
     - name: Upload test results to Codecov
       if: always() && matrix.python-version == '3.11'
-      uses: codecov/test-results-action@v1
+      uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: pytest.xml
