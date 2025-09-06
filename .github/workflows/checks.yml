@@ -20,5 +20,5 @@ jobs:
   typing:
     uses: ./.github/workflows/type_check.yml
   tests:
-    needs: [lint, sql_lint, typing]
+    needs: [lint, typing]
     uses: ./.github/workflows/tests.yml
