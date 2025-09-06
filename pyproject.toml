@@ -1,23 +1,26 @@
+[build-system]
+build-backend = "uv_build"
+
+requires = [ "uv-build>=0.8.6,<0.9.0" ]
+
 [project]
-name = "limbo_core"
+name = "limbo-core"
 version = "0.0.1a1"
 description = "A better place for data generation"
 readme = "README.md"
-authors = [{ name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" }]
+authors = [ { name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" } ]
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Database",
     "Topic :: Database :: Front-Ends",
     "Topic :: Scientific/Engineering",
@@ -31,29 +34,263 @@ classifiers = [
     "Topic :: Software Development :: Testing :: Unit",
     "Typing :: Typed",
 ]
-requires-python = ">=3.11"
-dependencies = [
-    "loguru>=0.7.3",
-    "pydantic>=2.11.7",
-    "pydantic-yaml>=1.6.0",
-    "sqlglot>=27.7.0",
-]
+dependencies = [ "pydantic>=2.11.7" ]
 
-[project.scripts]
-limbo_core = "limbo_core:main"
-
-[build-system]
-requires = ["uv_build>=0.8.6,<0.9.0"]
-build-backend = "uv_build"
+scripts.limbo_core = "limbo_core:main"
 
 [dependency-groups]
 dev = [
-    # Type checks
-    "mypy>=1.16.0",
-
-    # Docs
+    { include-group = "docs" },
+    { include-group = "linting" },
+    { include-group = "tests" },
+    { include-group = "typing" },
+]
+docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.6.0",
     "mkdocstrings[python]>=0.30.0",
 ]
-tests = ["coverage>=7.8.2", "pytest>=8.4.0"]
+typing = [ "mypy>=1.16.0" ]
+linting = [ "ruff>=0.12.12" ]
+tests = [ "coverage[toml]>=7.8.2", "pytest>=8.4.0" ]
+
+[tool.ruff]
+# Assume Python 3.11
+target-version = "py311"
+
+line-length = 80
+indent-width = 4
+
+include = [ "bin/**/*.py", "pyproject.toml", "src/**/*.py", "tests/**/*.py" ]
+
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".idea",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+# Use preview features
+preview = true
+
+# Fix and show all errors and warnings.
+fix = true
+show-fixes = true
+
+format.indent-style = "space"
+format.quote-style = "double"
+format.line-ending = "lf"
+format.skip-magic-trailing-comma = true
+format.docstring-code-line-length = 80
+lint.select = [
+    "A",     # flake8-builtins
+    "ASYNC", # flake8-async
+    "B",     # flake8-bugbear
+    "C",     # pycodestyle conventions
+    "C4",    # flake8-comprehensions
+    "C90",   # mccabe complexity
+    "DTZ",   # flake8-datetimez
+    "E",     # pycodestyle errors
+    "ERA",   # find commented out code
+    "F",     # pyflakes
+    "FA",    # flake8-future-annotations
+    "FLY",   # flynt
+    "FURB",  # refurb
+    "G",     # flake8-logging-format
+    "I",     # isort
+    "ICN",   # flkae8-import-conventions
+    "INP",   # flake8-no-pep420
+    "INT",   # flake8-gettext
+    "LOG",   # flake8-logging
+    "N",     # pep8-naming
+    "PERF",  # performance,
+    "PGH",   # pygrep-hooks
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "PTH",   # flake8-use-pathlib
+    "PYI",   # flake8-pyi
+    "Q",     # flake8-quotes
+    "R",     # pycodestyle refactoring
+    "RET",   # flake8-return
+    "RSE",   # flake8-raise
+    "RUF",   # ruff specific rules
+    "SIM",   # flake8-simplify
+    "T10",   # flake8-debugger
+    "T20",   # flake8-print
+    "TCH",   # flake8-type-checking
+    "TD",    # flake8-todo
+    "TID",   # flake8-tidy-imports
+    "TRY",   # tryceratops styles
+    "UP",    # pyupgrade
+    "W",     # pycodestyle warnings
+]
+lint.ignore = [
+    "RET504", # Unnecessary assignment before return
+    "TD003",  # Missing issue link on the line following todo comment
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "TRY004", # Prefer TypeError exception for invalid type
+    "TRY300", # Consider moving this statement to an else block
+]
+lint.per-file-ignores."__init__.py" = [ "F403" ]
+lint.per-file-ignores."tests/**/*.py" = [ "B903", "INP" ]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+lint.fixable = [ "ALL" ]
+lint.unfixable = [  ]
+# Allow unused variables when underscore-prefixed.
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+lint.flake8-annotations.suppress-dummy-args = true
+lint.isort.split-on-trailing-comma = false
+
+[tool.pyproject-fmt]
+column-width = 80
+indent = 4
+keep_full_version = true
+max_supported_python = "3.14"
+
+[tool.pytest.ini_options]
+minversion = "8.4.0"
+addopts = "-ra -vv"
+pythonpath = [ "src" ]
+testpaths = [ "tests" ]
+
+[tool.coverage.run]
+source = [ "src" ]
+relative_files = true
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+    "if TYPE_CHECKING:",
+]
+skip_empty = true
+skip_covered = true
+ignore_errors = true
+sort = "cover"
+
+[tool.coverage.html]
+directory = "coverage_html_report"
+
+[tool.mypy]
+mypy_path = [ "src" ]
+files = [ "src/**/*.py" ]
+python_version = "3.11"
+disable_error_code = [ "import-untyped" ]
+
+explicit_package_bases = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unreachable = true
+
+pretty = true
+
+[tool.rumdl]
+# Global configuration options
+line-length = 80
+disable = [  ]
+include = [ "docs/**/*.md", "*.md" ]
+exclude = [
+    ".idea",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+respect-gitignore = true
+
+[tool.rumdl.MD003]
+style = "atx"
+
+[tool.rumdl.MD004]
+style = "dash"
+
+[tool.rumdl.MD013]
+line_length = 80
+code_blocks = false
+tables = false
+headings = true
+
+# TODO(Vlad): Check if this will work
+# [tool.rumdl.MD024]
+# allow_different_nesting = true
+
+# TODO(Vlad): Add elements later
+[tool.rumdl.MD033]
+allowed_elements = [  ]
+
+# TODO(Vlad): Add names later
+[tool.rumdl.MD044]
+names = [ "rumdl", "Markdown", "GitHub" ]
+
+[tool.rumdl.MD045]
+placeholder_text = "TODO(ALL): Add image description"
+
+[tool.rumdl.MD046]
+style = "fenced"
+
+[tool.rumdl.MD048]
+style = "backtick"
+
+[tool.rumdl.MD049]
+style = "underscore"
+
+[tool.rumdl.MD050]
+style = "asterisk"
+
+[tool.rumdl.MD055]
+style = "no_leading_or_trailing"

@@ -1,9 +1,6 @@
-version: 0.0.1
-
 tables:
-  - name: comments_data
+  - name: comments
     description: A table for comments
-    alias: comments
     columns:
       - name: id
         data_type: integer
@@ -12,30 +9,32 @@ tables:
         data_type: integer
         generator: foreign_key.key
         options:
-          reference: "${ref:posts_data.id}"
+          reference: "${ref:posts.id}"
       - name: user_id
         data_type: integer
         generator: foreign_key.key
         options:
-          reference: "${ref:users_data.id}"
+          reference: "${ref:users.id}"
       - name: user_full_name
         data_type: string
         generator: foreign_key.value
         options:
-          reference: "${ref:users_data.full_name}"
+          reference: "${ref:users.full_name}"
       - name: content
         data_type: string
         generator: llm.generate
         options:
-          prompt: "Generate a comment for the post {{ references.posts_data.title }}."
+          prompt: "Generate a comment for the post {{ references.posts.title }}."
       - name: created_at
         data_type: datetime
         generator: datetime.random
         options:
-          start_date: "${ref:posts_data.created_at}"
+          start_date: "${ref:posts.created_at}"
           end_date: "2025-01-01"
     references:
-      - table: posts_data
+      - type: table
+        name: posts
         relationship: one_to_one
-      - table: users_data
+      - type: table
+        name: users
         relationship: one_to_one

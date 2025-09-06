@@ -1,9 +1,6 @@
-version: 0.0.1
-
 tables:
-  - name: users_data
+  - name: users
     description: A table for users
-    alias: users
     config:
       materialize: true
     columns:
@@ -13,6 +10,11 @@ tables:
       - name: full_name
         data_type: string
         generator: pii.full_name
+      - name: sex_id
+        data_type: string
+        generator: foreign_key.key
+        options:
+          reference: "${ref:sex.id}"
       - name: email
         data_type: string
         generator: pii.email
@@ -29,5 +31,12 @@ tables:
         data_type: datetime
         generator: datetime.random
         options:
-          start_date: "2020-01-01"
+          start_date: "${ref:this.created_at}"
           end_date: "2025-01-01"
+    references:
+      - type: seed
+        name: sex
+        relationship: one_to_many
+      - type: source
+        name: company
+        relationship: one_to_many

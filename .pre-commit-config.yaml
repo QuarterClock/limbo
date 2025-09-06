@@ -1,9 +1,15 @@
+default_install_hook_types:
+  - pre-commit
+  - post-checkout
+  - post-merge
+  - post-rewrite
+
 default_language_version:
     python: python3.11
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
     - id: check-added-large-files
     - id: check-case-conflict
@@ -14,22 +20,21 @@ repos:
     - id: destroyed-symlinks
     - id: check-toml
     - id: check-yaml
-    # TODO(Vlad): Add this back in when ready
-    # - id: no-commit-to-branch
-    #   args: [--branch, main, --branch, master, --branch, develop]
+    - id: no-commit-to-branch
+      args: [--branch, main, --branch, master, --branch, develop]
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.33.2
+    rev: 0.33.3
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.8
+    rev: v0.12.12
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.0.112
+    rev: v0.0.138
     hooks:
       - id: rumdl
         args: [--fix]
@@ -37,17 +42,25 @@ repos:
     rev: v2.4.1
     hooks:
     - id: codespell
+      additional_dependencies: [tomli]
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: "v2.6.0"
+    hooks:
+      - id: pyproject-fmt
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.6
+    rev: 0.8.15
     hooks:
       - id: uv-lock
-  # TODO(Vlad): Replace with ty
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        entry: uv run mypy
-        args: [--install-types, --non-interactive]
-        language: system
-        types: [python]
-        require_serial: true
+      - id: uv-sync
+        args: ["--locked", "--dev"]
+        stages: [pre-commit, post-checkout, post-merge, post-rewrite]
+  # TODO(Vlad): Replace with ty and fix
+  # - repo: local
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy
+  #       entry: uv run mypy
+  #       args: [--install-types, --non-interactive]
+  #       language: system
+  #       types: [python]
+  #       require_serial: true

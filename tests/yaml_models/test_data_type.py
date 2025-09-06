@@ -1,35 +1,17 @@
 import pytest
 
-from limbo_core.yaml_schema import DataType
+from limbo_core.yaml_schema.artifacts import DataType
 
 
 @pytest.mark.parametrize(
-    ("data_type", "expected"),
-    [
-        (DataType.STRING, "string"),
-        (DataType.INTEGER, "integer"),
-        (DataType.FLOAT, "float"),
-        (DataType.BOOLEAN, "boolean"),
-        (DataType.DATE, "date"),
-        (DataType.DATETIME, "datetime"),
-        (DataType.TIMESTAMP, "timestamp"),
-    ],
+    ("data_type", "expected"), [(enum, enum.value) for enum in DataType]
 )
 def test_data_type(data_type, expected):
     assert DataType(data_type) == expected
 
 
 @pytest.mark.parametrize(
-    ("data_type", "expected"),
-    [
-        (DataType.STRING, "string"),
-        (DataType.INTEGER, "integer"),
-        (DataType.FLOAT, "float"),
-        (DataType.BOOLEAN, "boolean"),
-        (DataType.DATE, "date"),
-        (DataType.DATETIME, "datetime"),
-        (DataType.TIMESTAMP, "timestamp"),
-    ],
+    ("data_type", "expected"), [(enum, enum.value) for enum in DataType]
 )
 def test_data_type_creation(data_type, expected):
     assert DataType(data_type) == expected

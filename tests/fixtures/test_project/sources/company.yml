@@ -1,0 +1,18 @@
+sources:
+  - name: company
+    description: A source for company data
+    config:
+      materialize: true
+    columns:
+      - name: id
+        data_type: integer
+      - name: name
+        data_type: string
+      - name: address
+        data_type: string
+      - name: city
+        data_type: string
+      - name: state
+        data_type: string
+      - name: zip
+        data_type: string
