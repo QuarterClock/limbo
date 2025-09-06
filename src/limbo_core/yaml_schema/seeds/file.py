@@ -16,6 +16,18 @@ class SeedFile(BaseModel):
     @field_validator("path", mode="before")
     @classmethod
     def validate_path(cls, value: str, info: ValidationInfo) -> Path:
+        """Validate the path.
+
+        Args:
+            value: The path to validate.
+            info: The validation info.
+
+        Returns:
+            The validated path.
+
+        Raises:
+            ValueError: If the context is missing or the path is invalid.
+        """
         if info.context is None:
             raise ValueError
         factory = PathFactory(info.context)

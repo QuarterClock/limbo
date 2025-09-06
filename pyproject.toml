@@ -150,6 +150,8 @@ lint.select = [
     "W",     # pycodestyle warnings
 ]
 lint.ignore = [
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
     "RET504", # Unnecessary assignment before return
     "TD003",  # Missing issue link on the line following todo comment
     "TRY003", # Avoid specifying long messages outside the exception class

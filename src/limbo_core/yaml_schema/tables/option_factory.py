@@ -19,10 +19,27 @@ class OptionFactory:
     _BOOL_TRUE_VALUES: ClassVar[set[str]] = {"true", "1", "yes", "y", "on"}
     _BOOL_FALSE_VALUES: ClassVar[set[str]] = {"false", "0", "no", "n", "off"}
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context) -> None:
+        """Initialize the option factory.
+
+        Args:
+            context: The context to use for the option factory.
+        """
         self._context = context
 
     def from_raw(self, raw: Any) -> ColumnOptionBase:
+        """Create an option from a raw YAML value.
+
+        Args:
+            raw: The raw YAML value to create an option from.
+
+        Returns:
+            The created option.
+
+        Raises:
+            ValueError: If the raw YAML value is not a valid option.
+            NotImplementedError: If the raw YAML value is not supported.
+        """
         # TODO(Vlad): Maybe use a chain of responsibility pattern here.
         if not isinstance(raw, str):
             return ColumnOptionPrimitiveValue(
@@ -52,6 +69,15 @@ class OptionFactory:
     def _process_special_types(
         self, prefix: str, content: str
     ) -> ColumnOptionBase | None:
+        """Process a special type option.
+
+        Args:
+            prefix: The prefix of the option.
+            content: The content of the option.
+
+        Returns:
+            The processed option.
+        """
         match prefix:
             case "ref":
                 return ColumnOptionReferenceValue(ref=content)
@@ -61,6 +87,15 @@ class OptionFactory:
     def _process_primitive_type(
         self, prefix: str, content: str
     ) -> ColumnOptionBase | None:
+        """Process a primitive type option.
+
+        Args:
+            prefix: The prefix of the option.
+            content: The content of the option.
+
+        Returns:
+            The processed option.
+        """
         if prefix not in DataType:
             return None
         data_type = DataType(prefix)
@@ -70,6 +105,14 @@ class OptionFactory:
         )
 
     def _get_data_type(self, raw: Any) -> DataType:
+        """Get the data type of a raw YAML value.
+
+        Args:
+            raw: The raw YAML value to get the data type of.
+
+        Returns:
+            The data type of the raw YAML value.
+        """
         match raw:
             case str():
                 return DataType.STRING
@@ -87,6 +130,18 @@ class OptionFactory:
                 return DataType.STRING
 
     def _cast_by_datatype(self, data_type: DataType, raw: str) -> Any:
+        """Cast a raw YAML value to a specific data type.
+
+        Args:
+            data_type: The data type to cast the raw YAML value to.
+            raw: The raw YAML value to cast.
+
+        Returns:
+            The casted value.
+
+        Raises:
+            ValueError: If the value could not be cast to the given data type.
+        """
         match data_type:
             case DataType.STRING:
                 return raw
@@ -109,6 +164,17 @@ class OptionFactory:
                 raise ValueError
 
     def _parse_bool(self, value: str) -> bool:
+        """Parse a string value to a boolean.
+
+        Args:
+            value: The string value to parse.
+
+        Returns:
+            The parsed boolean value.
+
+        Raises:
+            ValueError: If the string value could not be parsed to a boolean.
+        """
         lowered = value.strip().lower()
         if lowered in self._BOOL_TRUE_VALUES:
             return True
