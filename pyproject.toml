@@ -110,6 +110,8 @@ lint.select = [
     "C",     # pycodestyle conventions
     "C4",    # flake8-comprehensions
     "C90",   # mccabe complexity
+    "D",     # pydocstyle
+    "DOC",   # pydoclint
     "DTZ",   # flake8-datetimez
     "E",     # pycodestyle errors
     "ERA",   # find commented out code
@@ -153,7 +155,7 @@ lint.ignore = [
     "TRY300", # Consider moving this statement to an else block
 ]
 lint.per-file-ignores."__init__.py" = [ "F403" ]
-lint.per-file-ignores."tests/**/*.py" = [ "B903", "INP" ]
+lint.per-file-ignores."tests/**/*.py" = [ "B903", "D", "DOC", "INP" ]
 # Allow fix for all enabled rules (when `--fix`) is provided.
 lint.fixable = [ "ALL" ]
 lint.unfixable = [  ]
@@ -161,6 +163,7 @@ lint.unfixable = [  ]
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 lint.flake8-annotations.suppress-dummy-args = true
 lint.isort.split-on-trailing-comma = false
+lint.pydocstyle.convention = "google"
 
 [tool.pyproject-fmt]
 column-width = 80
@@ -264,15 +267,11 @@ code_blocks = false
 tables = false
 headings = true
 
-# TODO(Vlad): Check if this will work
-# [tool.rumdl.MD024]
-# allow_different_nesting = true
-
-# TODO(Vlad): Add elements later
+# Allowed HTML elements
 [tool.rumdl.MD033]
 allowed_elements = [  ]
 
-# TODO(Vlad): Add names later
+# Known names to replace
 [tool.rumdl.MD044]
 names = [ "rumdl", "Markdown", "GitHub" ]
 
