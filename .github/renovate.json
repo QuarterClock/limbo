@@ -7,6 +7,19 @@
     "pre-commit": {
         "enabled": true
     },
+    "enabledManagers": ["pre-commit", "pep621"],
+    "packageRules": [
+        {
+            "description": "Group all pre-commit updates into a single PR",
+            "matchManagers": ["pre-commit"],
+            "groupName": "pre-commit hooks"
+        },
+        {
+            "description": "Group all pep621 updates into a single PR",
+            "matchManagers": ["pep621"],
+            "groupName": "pep621"
+        }
+    ],
     "postUpgradeTasks": {
         "commands": [
             "pip install uv",
