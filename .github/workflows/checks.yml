@@ -2,12 +2,10 @@ name: Perform code checks
 
 on:
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: true
   push:
-
-permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
 
 jobs:
   lint:
@@ -17,3 +15,5 @@ jobs:
   tests:
     needs: [lint, typing]
     uses: ./.github/workflows/tests.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
