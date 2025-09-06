@@ -48,10 +48,13 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    # Type checks
-    "mypy>=1.16.0",
+    { include-group = "typing" },
+    { include-group = "docs" },
+    { include-group = "tests" },
 
-    # Docs
+]
+typing = ["mypy>=1.16.0"]
+docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.6.0",
     "mkdocstrings[python]>=0.30.0",

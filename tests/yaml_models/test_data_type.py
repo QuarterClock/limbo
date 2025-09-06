@@ -1,6 +1,6 @@
 import pytest
 
-from limbo_core.yaml_schema import DataType
+from limbo_core.yaml_schema.tables import DataType
 
 
 @pytest.mark.parametrize(

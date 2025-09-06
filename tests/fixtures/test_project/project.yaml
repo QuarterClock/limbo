@@ -1,0 +1,6 @@
+version: 0.0.1
+
+vars:
+  llm:
+    provider: openai
+    model: gpt-4o-mini

@@ -1,9 +1,6 @@
-version: 0.0.1
-
 tables:
-  - name: posts_data
+  - name: posts
     description: A table for posts
-    alias: posts
     columns:
       - name: id
         data_type: integer
@@ -14,13 +11,13 @@ tables:
         data_type: integer
         generator: foreign_key.key
         options:
-          reference: "${ref:users_data.id}"
+          reference: "${ref:users.id}"
       - name: title
         data_type: string
         generator: llm.generate
         options:
           # TODO(Vlad): fix prompt to use the reference.
-          prompt: "Generate a title for a post about the user's day. The user's name is {{ references.users_data.full_name }}."
+          prompt: "Generate a title for a post about the user's day. The user's name is {{ references.users.full_name }}."
       - name: content
         data_type: string
         generator: text.text
@@ -31,7 +28,7 @@ tables:
         data_type: datetime
         generator: datetime.random
         options:
-          start_date: "${ref:users_data.created_at}"
+          start_date: "${ref:users.created_at}"
           end_date: "2025-01-01"
       - name: updated_at
         data_type: datetime
@@ -40,5 +37,6 @@ tables:
           start_date: "${ref:this.created_at}"
           end_date: "2025-01-01"
     references:
-      - table: users_data
+      - type: table
+        name: users
         relationship: one_to_many

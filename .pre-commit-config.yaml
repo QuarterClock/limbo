@@ -1,3 +1,9 @@
+default_install_hook_types:
+  - pre-commit
+  - post-checkout
+  - post-merge
+  - post-rewrite
+
 default_language_version:
     python: python3.11
 
@@ -14,9 +20,8 @@ repos:
     - id: destroyed-symlinks
     - id: check-toml
     - id: check-yaml
-    # TODO(Vlad): Add this back in when ready
-    # - id: no-commit-to-branch
-    #   args: [--branch, main, --branch, master, --branch, develop]
+    - id: no-commit-to-branch
+      args: [--branch, main, --branch, master, --branch, develop]
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.33.2
     hooks:
@@ -41,13 +46,16 @@ repos:
     rev: 0.8.6
     hooks:
       - id: uv-lock
-  # TODO(Vlad): Replace with ty
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        entry: uv run mypy
-        args: [--install-types, --non-interactive]
-        language: system
-        types: [python]
-        require_serial: true
+      - id: uv-sync
+        args: ["--locked", "--dev"]
+        stages: [pre-commit, post-checkout, post-merge, post-rewrite]
+  # TODO(Vlad): Replace with ty and fix
+  # - repo: local
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy
+  #       entry: uv run mypy
+  #       args: [--install-types, --non-interactive]
+  #       language: system
+  #       types: [python]
+  #       require_serial: true

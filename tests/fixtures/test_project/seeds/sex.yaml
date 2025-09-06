@@ -1,0 +1,10 @@
+seeds:
+  - name: sex
+    description: "Sex of the user"
+    seed_file:
+      path: "${path:this.parent}/sex.csv"
+    columns:
+      - name: id
+        data_type: integer
+      - name: sex
+        data_type: string

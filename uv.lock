@@ -254,14 +254,24 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "coverage" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "mypy" },
+    { name = "pytest" },
+]
+docs = [
+    { name = "mkdocs" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
 ]
 tests = [
     { name = "coverage" },
     { name = "pytest" },
+]
+typing = [
+    { name = "mypy" },
 ]
 
 [package.metadata]
@@ -274,15 +284,23 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "coverage", specifier = ">=7.8.2" },
     { name = "mkdocs", specifier = ">=1.6.0" },
     { name = "mkdocs-material", specifier = ">=9.6.0" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.0" },
     { name = "mypy", specifier = ">=1.16.0" },
+    { name = "pytest", specifier = ">=8.4.0" },
+]
+docs = [
+    { name = "mkdocs", specifier = ">=1.6.0" },
+    { name = "mkdocs-material", specifier = ">=9.6.0" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.0" },
 ]
 tests = [
     { name = "coverage", specifier = ">=7.8.2" },
     { name = "pytest", specifier = ">=8.4.0" },
 ]
+typing = [{ name = "mypy", specifier = ">=1.16.0" }]
 
 [[package]]
 name = "loguru"
