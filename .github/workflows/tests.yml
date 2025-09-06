@@ -25,7 +25,6 @@ jobs:
     - name: Install tests requirements
       run: uv sync --locked --group tests
     - name: Run tests coverage
-      continue-on-error: true
       run: |
         uv run pytest \
           --cov \
@@ -52,17 +51,14 @@ jobs:
     #     # Advanced
     #     unique-id-for-comment: tests-${{ matrix.python-version }}
     - name: Upload coverage reports to Codecov
-      if: matrix.python-version == '3.11' && success()
+      if: always() && matrix.python-version == '3.11'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.xml
     - name: Upload test results to Codecov
-      if: ${{ !cancelled() }}
+      if: always() && matrix.python-version == '3.11'
       uses: codecov/test-results-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: pytest.xml
-    - name: Fail if tests failed
-      if: failure()
-      run: exit 1
