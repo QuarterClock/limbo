@@ -8,7 +8,7 @@ on:
   push:
 
 jobs:
-  # TODO(Vlad): Add markdown linting checks
+  # Code checks
   python_lint:
     uses: ./.github/workflows/python_lint.yml
   typing:
@@ -18,3 +18,10 @@ jobs:
     uses: ./.github/workflows/tests.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # Documentation checks
+  md_lint:
+    uses: ./.github/workflows/md_lint.yml
+  # TODO(Vlad): Implement docs build checks
+  # docs_build:
+  #   uses: ./.github/workflows/docs_build.yml

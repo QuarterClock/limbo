@@ -41,6 +41,7 @@ scripts.limbo_core = "limbo_core:main"
 dev = [
     { include-group = "docs" },
     { include-group = "linting" },
+    { include-group = "markdown" },
     { include-group = "tests" },
     { include-group = "typing" },
 ]
@@ -51,6 +52,7 @@ docs = [
 ]
 typing = [ "mypy>=1.16.0" ]
 linting = [ "ruff>=0.12.12" ]
+markdown = [ "rumdl>=0.0.138" ]
 tests = [ "pytest>=8.4.0", "pytest-cov>=6.3.0" ]
 
 [tool.ruff]
@@ -184,13 +186,13 @@ branch = true
 
 [tool.coverage.report]
 exclude_also = [
+    "@(abc\\.)?abstractmethod",
     "def __repr__",
+    "if 0:",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "@(abc\\.)?abstractmethod",
-    "if TYPE_CHECKING:",
 ]
 skip_empty = true
 skip_covered = true
@@ -223,15 +225,15 @@ pretty = true
 # Global configuration options
 line-length = 80
 disable = [  ]
-include = [ "docs/**/*.md", "*.md" ]
+include = [ "*.md", "docs/**/*.md" ]
 exclude = [
-    ".idea",
     ".bzr",
     ".direnv",
     ".eggs",
     ".git",
     ".git-rewrite",
     ".hg",
+    ".idea",
     ".ipynb_checkpoints",
     ".mypy_cache",
     ".nox",
@@ -273,7 +275,7 @@ allowed_elements = [  ]
 
 # Known names to replace
 [tool.rumdl.MD044]
-names = [ "rumdl", "Markdown", "GitHub" ]
+names = [ "GitHub", "Markdown", "rumdl" ]
 
 [tool.rumdl.MD045]
 placeholder_text = "TODO(ALL): Add image description"

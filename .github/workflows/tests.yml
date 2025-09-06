@@ -32,24 +32,6 @@ jobs:
           --cov-report=term-missing \
           --cov-report=xml:coverage.xml \
           --junitxml=pytest.xml
-    # - name: Coverage comment
-    #   if: always()
-    #   id: coverage
-    #   uses: MishaKav/pytest-coverage-comment@main
-    #   with:
-    #     # Core
-    #     github-token: ${{ secrets.GITHUB_TOKEN }}
-    #     pytest-coverage-path: ./pytest-coverage.txt
-    #     pytest-xml-coverage-path: ./coverage.xml
-    #     junitxml-path: ./pytest.xml
-
-    #     # Display
-    #     junitxml-title: Tests Summary
-    #     report-only-changed-files: true
-    #     xml-skip-covered: true
-
-    #     # Advanced
-    #     unique-id-for-comment: tests-${{ matrix.python-version }}
     - name: Upload coverage reports to Codecov
       if: always() && matrix.python-version == '3.11'
       uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
