@@ -1,0 +1,16 @@
+codecov:
+  require_ci_to_pass: true
+  status:
+    project:
+      default:
+        target: 90
+        threshold: 1
+        if_ci_failed: error
+coverage:
+  round: down
+  precision: 3
+  range: 60..85
+comment:
+  require_changes: true
+  layout: "header, diff, files, footer"
+  hide_project_coverage: false
