@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   lint:
-    uses: ./.github/workflows/ruff_lint.yml
+    uses: ./.github/workflows/python_lint.yml
   typing:
     uses: ./.github/workflows/type_check.yml
   tests:

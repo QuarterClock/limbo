@@ -52,7 +52,7 @@ docs = [
 ]
 typing = [ "mypy>=1.16.0" ]
 linting = [ "ruff>=0.12.12" ]
-tests = [ "coverage[toml]>=7.8.2", "pytest>=8.4.0" ]
+tests = [ "pytest>=8.4.0", "pytest-cov>=6.3.0" ]
 
 [tool.ruff]
 # Assume Python 3.11

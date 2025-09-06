@@ -7,14 +7,18 @@ jobs:
   mypy_check:
     name: Type Checking
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.11
+        python-version: ${{ matrix.python-version }}
     - name: Install uv
       uses: astral-sh/setup-uv@v6
     - name: Install type checking requirements
       run: uv sync --locked --group typing
     - name: Run Static Type Checks
-      run: uv run mypy --no-incremental
+      run: uv run mypy --no-incremental --python-version ${{ matrix.python-version }}
