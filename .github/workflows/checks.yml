@@ -2,18 +2,26 @@ name: Perform code checks
 
 on:
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: true
   push:
 
-permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
-
 jobs:
-  lint:
+  # Code checks
+  python_lint:
     uses: ./.github/workflows/python_lint.yml
   typing:
     uses: ./.github/workflows/type_check.yml
   tests:
-    needs: [lint, typing]
+    needs: [python_lint, typing]
     uses: ./.github/workflows/tests.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # Documentation checks
+  md_lint:
+    uses: ./.github/workflows/md_lint.yml
+  # TODO(Vlad): Implement docs build checks
+  # docs_build:
+  #   uses: ./.github/workflows/docs_build.yml

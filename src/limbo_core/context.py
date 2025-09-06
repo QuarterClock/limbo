@@ -1,3 +1,4 @@
+# TODO(Vlad): Split context into Parsing and generation contexts.
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,12 @@ class Context(BaseModel):
     def resolve_reference(self, reference: str) -> Any:
         """Resolve a reference string like 'table.column'.
 
-        The concrete resolution is provided by the integration layer.
+        Resolves to the value of the referenced column.
+
+        Args:
+            reference: The reference string to resolve.
+
+        Returns:
+            The resolved value.
         """
         return "not implemented"

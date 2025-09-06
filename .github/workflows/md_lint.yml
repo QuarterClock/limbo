@@ -1,0 +1,20 @@
+name: Run Markdown Linting
+
+on:
+  workflow_call:
+
+jobs:
+  md_lint:
+    name: Markdown Linting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+    - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
+      with:
+        python-version: 3.11
+    - name: Install uv
+      uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6 # v6
+    - name: Install linting requirements
+      run: uv sync --locked --group markdown
+    - name: Run Markdown formatting check
+      run: uv run rumdl check --diff --output-format github

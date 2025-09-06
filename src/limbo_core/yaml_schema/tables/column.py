@@ -17,6 +17,18 @@ class TableColumn(ArtifactColumn):
     @field_validator("generator", mode="after")
     @classmethod
     def validate_generator(cls, value: str, info: ValidationInfo) -> str:
+        """Validate the generator.
+
+        Args:
+            value: The generator to validate.
+            info: The validation info.
+
+        Returns:
+            The validated generator.
+
+        Raises:
+            ValueError: If the context is missing or the generator is invalid.
+        """
         if info.context is None:
             raise ValueError
         if value not in info.context.generators:
@@ -28,6 +40,18 @@ class TableColumn(ArtifactColumn):
     def validate_options(
         cls, value: dict[str, Any] | None, info: ValidationInfo
     ) -> dict[str, ColumnOptionBase] | None:
+        """Validate the options.
+
+        Args:
+            value: The options to validate.
+            info: The validation info.
+
+        Returns:
+            The validated options.
+
+        Raises:
+            ValueError: If the context is missing or the options are invalid.
+        """
         if value is None:
             return None
         if info.context is None:
