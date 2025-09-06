@@ -4,18 +4,9 @@
         "config:recommended",
         "schedule:weekly"
     ],
-    "packageRules": [
-        {
-            "description": "Do not update the Python version in .python-version",
-            "matchFileNames": [".python-version"],
-            "enabled": false
-        },
-        {
-            "description": "Group all pre-commit hook updates into a single PR",
-            "matchManagers": ["pre-commit"],
-            "groupName": "pre-commit hooks"
-        }
-    ],
+    "pre-commit": {
+        "enabled": true
+    },
     "postUpgradeTasks": {
         "commands": [
             "pip install uv",
