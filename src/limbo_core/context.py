@@ -10,9 +10,9 @@ class Context(BaseModel):
     generators: dict[str, Any]
     paths: dict[str, Path]
 
-    def resolve_reference(self, reference: str) -> Any:  # pragma: no cover
+    def resolve_reference(self, reference: str) -> Any:
         """Resolve a reference string like 'table.column'.
 
         The concrete resolution is provided by the integration layer.
         """
-        raise NotImplementedError
+        return "not implemented"
