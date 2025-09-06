@@ -1,0 +1,29 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "schedule:weekly"
+    ],
+    "packageRules": [
+        {
+            "description": "Do not update the Python version in .python-version",
+            "matchFileNames": [".python-version"],
+            "enabled": false
+        },
+        {
+            "description": "Group all pre-commit hook updates into a single PR",
+            "matchManagers": ["pre-commit"],
+            "groupName": "pre-commit hooks"
+        }
+    ],
+    "pip": {
+        "postUpgradeTasks": {
+            "commands": [
+                "pip install uv",
+                "uv pip compile pyproject.toml --output-file uv.lock"
+            ],
+            "fileFilters": ["uv.lock"],
+            "executionMode": "branch"
+        }
+    }
+}
