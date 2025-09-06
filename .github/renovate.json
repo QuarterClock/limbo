@@ -10,7 +10,7 @@
     "enabledManagers": [
         "pep621",
         "pre-commit",
-        "docker",
+        "dockerfile",
         "docker-compose",
         "github-actions",
         "renovate-config-presets"
