@@ -16,14 +16,14 @@
             "groupName": "pre-commit hooks"
         }
     ],
-    "pip": {
-        "postUpgradeTasks": {
-            "commands": [
-                "pip install uv",
-                "uv pip compile pyproject.toml --output-file uv.lock"
-            ],
-            "fileFilters": ["uv.lock"],
-            "executionMode": "branch"
-        }
+    "postUpgradeTasks": {
+        "commands": [
+            "pip install uv",
+            "uv lock --all-groups",
+            "uv sync --all-groups",
+            "uv run ruff check --fix",
+            "uv run ruff format"
+        ],
+        "executionMode": "update"
     }
 }
