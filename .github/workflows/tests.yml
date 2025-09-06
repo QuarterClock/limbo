@@ -31,9 +31,9 @@ jobs:
           --cov-config=pyproject.toml \
           --cov-report=term-missing \
           --cov-report=xml:coverage.xml \
-          --junitxml=pytest.xml \
-          | tee pytest-coverage.txt
+          --junitxml=pytest.xml
     # - name: Coverage comment
+    #   if: always()
     #   id: coverage
     #   uses: MishaKav/pytest-coverage-comment@main
     #   with:
