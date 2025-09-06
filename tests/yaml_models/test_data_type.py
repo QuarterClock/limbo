@@ -19,6 +19,5 @@ def test_data_type_creation(data_type, expected):
 
 @pytest.mark.parametrize("data_type", ["invalid", "123", "true", "false"])
 def test_data_type_creation_invalid(data_type):
-    pytest.fail("Test failed")
     with pytest.raises(ValueError):  # noqa: PT011
         DataType(data_type)
