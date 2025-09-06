@@ -41,8 +41,8 @@ scripts.limbo_core = "limbo_core:main"
 [dependency-groups]
 dev = [
     { include-group = "docs" },
+    { include-group = "linting" },
     { include-group = "tests" },
-
     { include-group = "typing" },
 ]
 docs = [
@@ -51,6 +51,7 @@ docs = [
     "mkdocstrings[python]>=0.30.0",
 ]
 typing = [ "mypy>=1.16.0" ]
+linting = [ "ruff>=0.12.12" ]
 tests = [ "coverage[toml]>=7.8.2", "pytest>=8.4.0" ]
 
 [tool.ruff]

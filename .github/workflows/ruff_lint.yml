@@ -1,0 +1,22 @@
+name: Run Ruff Linting and Formatting
+
+on:
+  workflow_call:
+
+jobs:
+  ruff_lint:
+    name: Python Linting and Formatting checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+    - name: Install linting requirements
+      run: uv sync --locked --group linting
+    - name: Run Python linting check
+      run: uv run ruff check --no-fix --output-format github
+    - name: Run Python formatting check
+      run: uv run ruff format --diff

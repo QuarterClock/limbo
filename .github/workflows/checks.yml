@@ -1,0 +1,24 @@
+name: Perform code checks
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches-ignore:
+      - master
+      - main
+      - develop
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  lint:
+    uses: ./.github/workflows/ruff_lint.yml
+  typing:
+    uses: ./.github/workflows/type_check.yml
+  tests:
+    needs: [lint, sql_lint, typing]
+    uses: ./.github/workflows/tests.yml
