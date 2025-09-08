@@ -22,4 +22,5 @@ class Context(BaseModel):
         Returns:
             The resolved value.
         """
-        return "not implemented"
+        # TODO(Vlad): Implement this.
+        return reference

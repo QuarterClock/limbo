@@ -34,3 +34,6 @@ htmlcov/*
 .tox
 junit*.xml
 coverage.xml
+
+.gemini/
+gha-creds-*.json

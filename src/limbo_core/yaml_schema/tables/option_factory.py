@@ -15,7 +15,7 @@ from .option import (
 class OptionFactory:
     """Factory for creating Option instances from raw YAML values."""
 
-    _PREFIX_RE: ClassVar[re.Pattern] = re.compile(r"\{([^:}]+):([^}]+)\}")
+    _PREFIX_RE: ClassVar[re.Pattern] = re.compile(r"\$\{([^:}]+):([^}]+)\}")
     _BOOL_TRUE_VALUES: ClassVar[set[str]] = {"true", "1", "yes", "y", "on"}
     _BOOL_FALSE_VALUES: ClassVar[set[str]] = {"false", "0", "no", "n", "off"}
 
@@ -46,13 +46,13 @@ class OptionFactory:
                 value=raw, data_type=self._get_data_type(raw)
             )
 
-        match = self._PREFIX_RE.findall(raw)
+        match = list(self._PREFIX_RE.finditer(raw))
         if not match:
             return ColumnOptionPrimitiveValue(
                 value=raw, data_type=self._get_data_type(raw)
             )
         if len(match) > 1:
-            raise NotImplementedError
+            raise NotImplementedError("Multiple option prefixes found")
 
         prefix, content = match[0].group(1).strip().lower(), match[0].group(2)
 
@@ -64,7 +64,7 @@ class OptionFactory:
         if option is not None:
             return option
 
-        raise ValueError
+        raise ValueError(f"Option prefix {prefix} is not supported")
 
     def _process_special_types(
         self, prefix: str, content: str
@@ -96,9 +96,11 @@ class OptionFactory:
         Returns:
             The processed option.
         """
-        if prefix not in DataType:
+        # TODO(Vlad): Consider raising a specific error here.
+        try:
+            data_type = DataType(prefix)
+        except ValueError:
             return None
-        data_type = DataType(prefix)
         return ColumnOptionPrimitiveValue(
             value=self._cast_by_datatype(data_type, content),
             data_type=data_type,
@@ -122,12 +124,11 @@ class OptionFactory:
                 return DataType.INTEGER
             case float():
                 return DataType.FLOAT
-            case dt.date():
-                return DataType.DATE
             case dt.datetime():
                 return DataType.DATETIME
-            case _:
-                return DataType.STRING
+            case dt.date():
+                return DataType.DATE
+        return DataType.STRING
 
     def _cast_by_datatype(self, data_type: DataType, raw: str) -> Any:
         """Cast a raw YAML value to a specific data type.
@@ -140,7 +141,8 @@ class OptionFactory:
             The casted value.
 
         Raises:
-            ValueError: If the value could not be cast to the given data type.
+            NotImplementedError: If the value could not be cast to the given
+            data type.
         """
         match data_type:
             case DataType.STRING:
@@ -154,14 +156,18 @@ class OptionFactory:
             case DataType.DATE:
                 return dt.date.fromisoformat(raw)
             case DataType.DATETIME:
-                return dt.datetime.fromisoformat(raw)
+                parsed = dt.datetime.fromisoformat(raw)
+                if parsed.tzinfo is None:
+                    return parsed.replace(tzinfo=dt.UTC)
+                return parsed
             case DataType.TIMESTAMP:
                 coerced = raw.strip()
                 if coerced.isdigit():
                     return int(coerced)
                 return int(dt.datetime.fromisoformat(coerced).timestamp())
-            case _:
-                raise ValueError
+        raise NotImplementedError(
+            f"Data type {data_type} is not supported yet."
+        )
 
     def _parse_bool(self, value: str) -> bool:
         """Parse a string value to a boolean.
@@ -180,4 +186,4 @@ class OptionFactory:
             return True
         if lowered in self._BOOL_FALSE_VALUES:
             return False
-        raise ValueError
+        raise ValueError(f"Value {value} is not a valid boolean")

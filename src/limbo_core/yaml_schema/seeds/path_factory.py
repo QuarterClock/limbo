@@ -8,7 +8,7 @@ from limbo_core.context import Context
 class PathFactory:
     """Factory for creating Path instances from raw YAML values."""
 
-    _PREFIX_RE: ClassVar[re.Pattern] = re.compile(r"\{([^:}]+):([^}]+)\}")
+    _PREFIX_RE: ClassVar[re.Pattern] = re.compile(r"\$\{([^:}]+):([^}]+)\}")
 
     def __init__(self, context: Context):
         """Initialize the Path factory.
@@ -33,28 +33,30 @@ class PathFactory:
             FileNotFoundError: If the path does not exist.
         """
         if not isinstance(raw, str):
-            raise ValueError
+            raise ValueError("Raw YAML value is not a string")
 
-        matches = self._PREFIX_RE.findall(raw)
+        matches = list(self._PREFIX_RE.finditer(raw))
         if not matches:
             path = Path(raw)
             if path.is_absolute():
-                raise ValueError
+                raise ValueError(
+                    "Path is absolute.Must be relative to the project root."
+                )
             if not path.exists():
-                raise FileNotFoundError
+                raise FileNotFoundError(f"Path {path} does not exist")
             return path
         if len(matches) > 1:
-            raise NotImplementedError
+            raise NotImplementedError("Multiple path prefixes found")
 
         prefix, content = (
             matches[0].group(1).strip().lower(),
             matches[0].group(2),
         )
         if not prefix == "path":
-            raise ValueError
+            raise ValueError(f"Prefix {prefix} is not supported")
 
         path = self._resolve_path(content)
-        derivative = self._PREFIX_RE.sub("", raw).strip().lstrip("/")
+        derivative = self._PREFIX_RE.sub("", raw).strip("/ ")
         if not derivative:
             return path
         return Path(path / derivative)
