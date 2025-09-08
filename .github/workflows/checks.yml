@@ -19,9 +19,12 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # Documentation checks
+  # Text formatting checks
   md_lint:
     uses: ./.github/workflows/md_lint.yml
+  codespell:
+    uses: ./.github/workflows/codespell.yml
   # TODO(Vlad): Implement docs build checks
   # docs_build:
+  #   needs: [md_lint, codespell]
   #   uses: ./.github/workflows/docs_build.yml
