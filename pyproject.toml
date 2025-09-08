@@ -39,6 +39,7 @@ scripts.limbo_core = "limbo_core:main"
 
 [dependency-groups]
 dev = [
+    { include-group = "codespell" },
     { include-group = "docs" },
     { include-group = "linting" },
     { include-group = "markdown" },
@@ -50,10 +51,11 @@ docs = [
     "mkdocs-material>=9.6.0",
     "mkdocstrings[python]>=0.30.0",
 ]
-typing = [ "mypy>=1.16.0" ]
+codespell = [ "codespell>=2.4.1" ]
 linting = [ "ruff>=0.12.12" ]
 markdown = [ "rumdl>=0.0.138" ]
 tests = [ "pytest>=8.4.0", "pytest-cov>=6.3.0" ]
+typing = [ "mypy>=1.16.0" ]
 
 [tool.ruff]
 # Assume Python 3.11
@@ -168,6 +170,14 @@ lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 lint.flake8-annotations.suppress-dummy-args = true
 lint.isort.split-on-trailing-comma = false
 lint.pydocstyle.convention = "google"
+
+[tool.codespell]
+count = true
+check-filenames = true
+context = 2
+summary = true
+write-changes = true
+skip = "./coverage_html_report,__pycache__"
 
 [tool.pyproject-fmt]
 column-width = 80

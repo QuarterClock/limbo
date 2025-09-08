@@ -18,7 +18,8 @@ A better place for data generation.
 <!-- [![PyPI Monthly Downloads](https://static.pepy.tech/personalized-badge/limbo_core?period=monthly&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=YELLOW&left_text=Monthly)](https://pepy.tech/projects/limbo_core) -->
 <!-- [![PyPI Total Downloads](https://static.pepy.tech/personalized-badge/limbo_core?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=Total)](https://pepy.tech/projects/limbo_core) -->
 
-[![MyPy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![MyPy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
 [![pydocstyle](https://img.shields.io/badge/pydocstyle-enabled-AD4CD3)](http://www.pydocstyle.org/en/stable/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
