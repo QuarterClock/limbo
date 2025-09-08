@@ -55,13 +55,11 @@ repos:
       - id: uv-sync
         args: ["--locked", "--dev"]
         stages: [pre-commit, post-checkout, post-merge, post-rewrite]
-  # TODO(Vlad): Replace with ty and fix
-  # - repo: local
-  #   hooks:
-  #     - id: mypy
-  #       name: mypy
-  #       entry: uv run mypy
-  #       args: [--install-types, --non-interactive]
-  #       language: system
-  #       types: [python]
-  #       require_serial: true
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: ./bin/run_mypy.sh
+        language: script
+        require_serial: true
+        types: [python]
