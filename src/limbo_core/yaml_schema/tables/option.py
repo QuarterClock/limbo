@@ -1,3 +1,4 @@
+import datetime as dt
 from abc import ABC, abstractmethod
 from typing import Any, Literal
 
@@ -34,14 +35,17 @@ class ColumnOptionBase(BaseModel, ABC):
         raise NotImplementedError
 
 
+PrimitiveType = str | int | float | bool | dt.date | dt.datetime
+
+
 class ColumnOptionPrimitiveValue(ColumnOptionBase):
     """Primitive option value, optionally annotated with a data type."""
 
     type: Literal["primitive"] = "primitive"
-    value: Any
+    value: PrimitiveType
     data_type: DataType
 
-    def resolve(self, context: Context) -> Any:
+    def resolve(self, context: Context) -> PrimitiveType:
         """Return the primitive value as-is.
 
         Args:

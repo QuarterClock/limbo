@@ -28,7 +28,6 @@ jobs:
       run: |
         uv run pytest \
           --cov \
-          --cov-config=pyproject.toml \
           --cov-report=term-missing \
           --cov-report=xml:coverage.xml \
           --junitxml=pytest.xml

@@ -22,6 +22,7 @@ repos:
     - id: check-yaml
     - id: no-commit-to-branch
       args: [--branch, main, --branch, master, --branch, develop]
+      stages: [pre-commit]
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.33.3
     hooks:
@@ -54,7 +55,11 @@ repos:
       - id: uv-lock
       - id: uv-sync
         args: ["--locked", "--dev"]
-        stages: [pre-commit, post-checkout, post-merge, post-rewrite]
+        stages:
+          - pre-commit
+          - post-checkout
+          - post-merge
+          - post-rewrite
   - repo: local
     hooks:
       - id: mypy

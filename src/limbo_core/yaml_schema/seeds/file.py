@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ValidationInfo, field_validator
 
+from limbo_core.errors import ContextMissingError
 from limbo_core.yaml_schema.seeds.path_factory import PathFactory
 
 
@@ -26,9 +27,9 @@ class SeedFile(BaseModel):
             The validated path.
 
         Raises:
-            ValueError: If the context is missing or the path is invalid.
+            ContextMissingError: If the context is missing.
         """
         if info.context is None:
-            raise ValueError
+            raise ContextMissingError
         factory = PathFactory(info.context)
         return factory.from_raw(value)

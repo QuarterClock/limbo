@@ -1,4 +1,4 @@
-# TODO(Vlad): Split context into Parsing and generation contexts.
+# TODO(Vlad): Split context into Parsing and Generation contexts.
 from pathlib import Path
 from typing import Any
 
@@ -22,4 +22,4 @@ class Context(BaseModel):
         Returns:
             The resolved value.
         """
-        return "not implemented"
+        raise NotImplementedError
