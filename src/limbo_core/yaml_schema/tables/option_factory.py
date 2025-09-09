@@ -128,7 +128,7 @@ class OptionFactory:
                 return DataType.DATETIME
             case dt.date():
                 return DataType.DATE
-        return DataType.STRING
+        raise NotImplementedError(f"Data type {type(raw)} is not supported")
 
     def _cast_by_datatype(self, data_type: DataType, raw: str) -> Any:
         """Cast a raw YAML value to a specific data type.
