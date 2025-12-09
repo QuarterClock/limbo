@@ -33,7 +33,7 @@ classifiers = [
     "Topic :: Software Development :: Testing :: Unit",
     "Typing :: Typed",
 ]
-dependencies = [ "pydantic>=2.11.7" ]
+dependencies = [ "pydantic>=2.12.0,<3.0.0" ]
 
 scripts.limbo_core = "limbo_core:main"
 
@@ -47,15 +47,15 @@ dev = [
     { include-group = "typing" },
 ]
 docs = [
-    "mkdocs>=1.6.0",
-    "mkdocs-material>=9.6.0",
-    "mkdocstrings[python]>=0.30.0",
+    "mkdocs==1.6.1",
+    "mkdocs-material==9.7.0",
+    "mkdocstrings[python]==1.0.0",
 ]
-codespell = [ "codespell>=2.4.1" ]
-linting = [ "ruff>=0.12.12" ]
-markdown = [ "rumdl>=0.0.138" ]
-tests = [ "pytest>=8.4.0", "pytest-cov>=6.3.0" ]
-typing = [ "mypy>=1.16.0" ]
+codespell = [ "codespell==2.4.1" ]
+linting = [ "ruff==0.14.8" ]
+markdown = [ "rumdl==0.0.191" ]
+tests = [ "pytest==9.0.2", "pytest-cov==7.0.0" ]
+typing = [ "mypy==1.19.0" ]
 
 [tool.ruff]
 # Assume Python 3.11
@@ -185,9 +185,9 @@ indent = 4
 keep_full_version = true
 max_supported_python = "3.13"
 
-[tool.pytest.ini_options]
+[tool.pytest]
 minversion = "8.4.0"
-addopts = "-ra -vv"
+addopts = [ "-ra", "-vv" ]
 pythonpath = [ "src" ]
 testpaths = [ "tests" ]
 
