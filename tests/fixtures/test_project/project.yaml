@@ -4,3 +4,12 @@ vars:
   llm:
     provider: openai
     model: gpt-4o-mini
+
+connections:
+  - type: sqlalchemy
+    name: main_db
+    dialect: sqlite
+    host: ""
+    user: ""
+    password: ""
+    database: ${env:DB_PATH:-:memory:}

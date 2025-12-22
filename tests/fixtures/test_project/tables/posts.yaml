@@ -16,7 +16,6 @@ tables:
         data_type: string
         generator: llm.generate
         options:
-          # TODO(Vlad): fix prompt to use the reference.
           prompt: "Generate a title for a post about the user's day. The user's name is {{ references.users.full_name }}."
       - name: content
         data_type: string

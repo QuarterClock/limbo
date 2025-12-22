@@ -12,7 +12,6 @@ from .reference import TableReference
 class Table(Artifact[TableConfig, TableColumn]):
     """Table definition."""
 
-    # New fields
     references: Annotated[list[TableReference], Field(min_length=1)] | None = (
         None
     )

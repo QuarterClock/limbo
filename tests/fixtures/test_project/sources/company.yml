@@ -2,6 +2,7 @@ sources:
   - name: company
     description: A source for company data
     config:
+      connection: main_db
       materialize: true
     columns:
       - name: id
