@@ -51,14 +51,14 @@ dev = [
 ]
 docs = [
     "mkdocs==1.6.1",
-    "mkdocs-material==9.7.0",
+    "mkdocs-material==9.7.1",
     "mkdocstrings[python]==1.0.0",
 ]
 codespell = [ "codespell==2.4.1" ]
-linting = [ "ruff==0.14.8" ]
-markdown = [ "rumdl==0.0.191" ]
+linting = [ "pyproject-fmt==2.11.1", "ruff==0.14.10" ]
+markdown = [ "rumdl==0.0.199" ]
 tests = [ "pytest==9.0.2", "pytest-cov==7.0.0" ]
-typing = [ "mypy==1.19.0" ]
+typing = [ "mypy==1.19.1" ]
 
 [tool.ruff]
 # Assume Python 3.11

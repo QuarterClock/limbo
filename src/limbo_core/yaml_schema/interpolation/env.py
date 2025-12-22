@@ -1,4 +1,4 @@
-"""String interpolation utilities for YAML values."""
+"""Environment variable interpolation."""
 
 import os
 import re

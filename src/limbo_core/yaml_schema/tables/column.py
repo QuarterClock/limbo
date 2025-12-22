@@ -6,7 +6,6 @@ from limbo_core.errors import ContextMissingError
 from limbo_core.yaml_schema.artifacts.column import ArtifactColumn
 
 from .option import ColumnOptionBase
-from .option_factory import OptionFactory
 
 
 class TableColumn(ArtifactColumn):
@@ -58,5 +57,4 @@ class TableColumn(ArtifactColumn):
             return None
         if info.context is None:
             raise ContextMissingError
-        factory = OptionFactory(info.context)
-        return {key: factory.from_raw(val) for key, val in value.items()}
+        return {k: ColumnOptionBase.from_raw(v) for k, v in value.items()}
