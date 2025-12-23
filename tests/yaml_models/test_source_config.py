@@ -1,41 +1,28 @@
+"""Tests for SourceConfig and Context connection management."""
+
 import pytest
 from pydantic import ValidationError
 
 from limbo_core.connections import SQLAlchemyConnection
 from limbo_core.context import Context
+from limbo_core.errors import ContextMissingError
 from limbo_core.yaml_schema.sources.config import SourceConfig
 
 
 class TestSourceConfigConnectionValidation:
-    @pytest.fixture
-    def main_db_connection(self) -> SQLAlchemyConnection:
-        return SQLAlchemyConnection(
-            name="main_db",
-            host="localhost",
-            user="user",
-            password="password",
-            database="mydb",
-        )
+    """Test cases for SourceConfig connection validation."""
 
-    @pytest.fixture
-    def context_with_connection(
-        self, main_db_connection: SQLAlchemyConnection
-    ) -> Context:
-        return Context(
-            generators={}, paths={}, connections={"main_db": main_db_connection}
-        )
-
-    def test_source_config_valid_connection(
-        self, context_with_connection: Context
-    ) -> None:
+    def test_valid_connection(self, context_with_connection: Context) -> None:
+        """Verify valid connection name is accepted."""
         config = SourceConfig.model_validate(
             {"connection": "main_db"}, context=context_with_connection
         )
         assert config.connection == "main_db"
 
-    def test_source_config_invalid_connection_raises(
+    def test_invalid_connection_raises(
         self, context_with_connection: Context
     ) -> None:
+        """Verify invalid connection name raises ValidationError."""
         with pytest.raises(ValidationError) as exc_info:
             SourceConfig.model_validate(
                 {"connection": "nonexistent_db"},
@@ -44,26 +31,27 @@ class TestSourceConfigConnectionValidation:
         assert "nonexistent_db" in str(exc_info.value)
         assert "not found" in str(exc_info.value)
 
-    def test_source_config_get_connection(
+    def test_get_connection(
         self,
         context_with_connection: Context,
         main_db_connection: SQLAlchemyConnection,
     ) -> None:
+        """Verify get_connection returns the correct connection."""
         config = SourceConfig.model_validate(
             {"connection": "main_db"}, context=context_with_connection
         )
         resolved = config.get_connection(context_with_connection)
         assert resolved is main_db_connection
 
-    def test_source_config_missing_context_raises(self) -> None:
-        from limbo_core.errors import ContextMissingError
-
+    def test_missing_context_raises(self) -> None:
+        """Verify missing context raises ContextMissingError."""
         with pytest.raises(ContextMissingError):
             SourceConfig.model_validate({"connection": "main_db"})
 
-    def test_source_config_with_optional_fields(
+    def test_with_optional_fields(
         self, context_with_connection: Context
     ) -> None:
+        """Verify optional fields are parsed correctly."""
         config = SourceConfig.model_validate(
             {
                 "connection": "main_db",
@@ -78,36 +66,44 @@ class TestSourceConfigConnectionValidation:
 
 
 class TestContextConnectionManagement:
-    def test_context_get_connection_exists(self) -> None:
-        conn = SQLAlchemyConnection(
+    """Test cases for Context connection management."""
+
+    @pytest.fixture
+    def test_connection(self) -> SQLAlchemyConnection:
+        """Create a test connection."""
+        return SQLAlchemyConnection(
             name="test_db",
             host="localhost",
             user="user",
             password="pass",
             database="db",
         )
-        context = Context(
-            generators={}, paths={}, connections={"test_db": conn}
-        )
-        assert context.get_connection("test_db") is conn
 
-    def test_context_get_connection_missing_raises(self) -> None:
+    def test_get_connection_exists(
+        self, test_connection: SQLAlchemyConnection
+    ) -> None:
+        """Verify existing connection is returned."""
+        context = Context(
+            generators={}, paths={}, connections={"test_db": test_connection}
+        )
+        assert context.get_connection("test_db") is test_connection
+
+    def test_get_connection_missing_raises(self) -> None:
+        """Verify missing connection raises KeyError."""
         context = Context(generators={}, paths={}, connections={})
         with pytest.raises(KeyError) as exc_info:
             context.get_connection("missing_db")
         assert "missing_db" in str(exc_info.value)
         assert "not found" in str(exc_info.value)
 
-    def test_context_get_connection_shows_available(self) -> None:
-        conn = SQLAlchemyConnection(
-            name="existing_db",
-            host="localhost",
-            user="user",
-            password="pass",
-            database="db",
-        )
+    def test_get_connection_shows_available(
+        self, test_connection: SQLAlchemyConnection
+    ) -> None:
+        """Verify error message shows available connections."""
         context = Context(
-            generators={}, paths={}, connections={"existing_db": conn}
+            generators={},
+            paths={},
+            connections={"existing_db": test_connection},
         )
         with pytest.raises(KeyError) as exc_info:
             context.get_connection("wrong_name")

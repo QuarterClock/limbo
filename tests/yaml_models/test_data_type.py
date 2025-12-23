@@ -1,23 +1,37 @@
+"""Tests for DataType enum validation."""
+
 import pytest
 
 from limbo_core.yaml_schema.artifacts import DataType
 
 
-@pytest.mark.parametrize(
-    ("data_type", "expected"), [(enum, enum.value) for enum in DataType]
-)
-def test_data_type(data_type, expected):
-    assert DataType(data_type) == expected
+class TestDataType:
+    """Test cases for DataType enum."""
 
+    @pytest.mark.parametrize(
+        ("data_type", "expected"), [(enum, enum.value) for enum in DataType]
+    )
+    def test_data_type_returns_correct_value(
+        self, data_type: DataType, expected: str
+    ) -> None:
+        """Verify that DataType enum returns correct value."""
+        assert DataType(data_type) == expected
 
-@pytest.mark.parametrize(
-    ("data_type", "expected"), [(enum, enum.value) for enum in DataType]
-)
-def test_data_type_creation(data_type, expected):
-    assert DataType(data_type) == expected
+    @pytest.mark.parametrize(
+        ("data_type", "expected"), [(enum, enum.value) for enum in DataType]
+    )
+    def test_data_type_creation_from_value(
+        self, data_type: DataType, expected: str
+    ) -> None:
+        """Verify that DataType can be created from its value."""
+        assert DataType(data_type) == expected
 
-
-@pytest.mark.parametrize("data_type", ["invalid", "123", "true", "false"])
-def test_data_type_creation_invalid(data_type):
-    with pytest.raises(ValueError):  # noqa: PT011
-        DataType(data_type)
+    @pytest.mark.parametrize(
+        "invalid_type", ["invalid", "123", "true", "false"]
+    )
+    def test_data_type_creation_with_invalid_value_raises(
+        self, invalid_type: str
+    ) -> None:
+        """Verify that invalid data types raise ValueError."""
+        with pytest.raises(ValueError):  # noqa: PT011
+            DataType(invalid_type)
