@@ -42,6 +42,7 @@ scripts.limbo_core = "limbo_core:main"
 
 [dependency-groups]
 dev = [
+    "pre-commit==4.5.1",
     { include-group = "codespell" },
     { include-group = "docs" },
     { include-group = "linting" },

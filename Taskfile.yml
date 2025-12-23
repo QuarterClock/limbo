@@ -15,12 +15,12 @@ tasks:
   pre-commit:
     desc: Run all pre-commit hooks on all files
     cmds:
-      - pre-commit run --all-files
+      - uv run pre-commit run --all-files
 
   pre-commit:install:
     desc: Install pre-commit hooks
     cmds:
-      - pre-commit install --install-hooks
+      - uv run pre-commit install --install-hooks
 
   # Ruff linting and formatting
   ruff:
@@ -57,3 +57,28 @@ tasks:
     cmds:
       - uv run pytest --cov --cov-report=term-missing --cov-report=html
 
+  # Dependencies
+  outdated:
+    desc: Check for outdated dependencies
+    ignore_error: true
+    cmds:
+      - uv tree --depth=1 --outdated | grep latest
+
+  update:
+    desc: Update all dependencies
+    cmds:
+      - uv sync --all-groups --all-extras
+      - uv lock --upgrade
+      - uv run pre-commit autoupdate
+
+  # Generate docs
+  docs:
+    desc: Generate docs
+    cmds:
+      - uv run mkdocs build
+
+  # Build the project
+  build:
+    desc: Build the project
+    cmds:
+      - uv build --wheel --sdist
