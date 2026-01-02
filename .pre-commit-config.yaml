@@ -36,7 +36,7 @@ repos:
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.0.199
+    rev: v0.0.208
     hooks:
       - id: rumdl
         args: [--fix]
@@ -50,7 +50,7 @@ repos:
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.18
+    rev: 0.9.21
     hooks:
       - id: uv-lock
       - id: uv-sync
