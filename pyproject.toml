@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "uv_build"
 
-requires = [ "uv-build>=0.8.6,<0.9.0" ]
+requires = [ "uv-build>=0.9.21,<0.10.0" ]
 
 [project]
 name = "limbo-core"
@@ -57,7 +57,7 @@ docs = [
 ]
 codespell = [ "codespell==2.4.1" ]
 linting = [ "pyproject-fmt==2.11.1", "ruff==0.14.10" ]
-markdown = [ "rumdl==0.0.199" ]
+markdown = [ "rumdl==0.0.208" ]
 tests = [ "pytest==9.0.2", "pytest-cov==7.0.0" ]
 typing = [ "mypy==1.19.1" ]
 
