@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
     - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install uv
@@ -33,14 +33,14 @@ jobs:
           --junitxml=pytest.xml
     - name: Upload coverage reports to Codecov
       if: always() && matrix.python-version == '3.11'
-      uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5
+      uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.xml
         fail_ci_if_error: true
     - name: Upload test results to Codecov
       if: always() && matrix.python-version == '3.11'
-      uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1
+      uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: pytest.xml

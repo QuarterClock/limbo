@@ -55,7 +55,7 @@ jobs:
         id: 'gemini_analysis'
         if: |-
           ${{ steps.get_labels.outputs.available_labels != '' }}
-        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
+        uses: 'google-github-actions/run-gemini-cli@ba709f0578653f8a65869f9b862bd47455cd96d2' # v0
         env:
           GITHUB_TOKEN: '' # Do NOT pass any auth tokens here since this runs on untrusted inputs
           ISSUE_TITLE: '${{ github.event.issue.title }}'
@@ -140,7 +140,7 @@ jobs:
         id: 'mint_identity_token'
         if: |-
           ${{ vars.APP_ID }}
-        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
+        uses: 'actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf' # v2
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'

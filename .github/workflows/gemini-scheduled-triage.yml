@@ -85,7 +85,7 @@ jobs:
         id: 'gemini_issue_analysis'
         if: |-
           ${{ steps.find_issues.outputs.issues_to_triage != '[]' }}
-        uses: 'google-github-actions/run-gemini-cli@v0' # ratchet:exclude
+        uses: 'google-github-actions/run-gemini-cli@ba709f0578653f8a65869f9b862bd47455cd96d2' # v0
         env:
           GITHUB_TOKEN: '' # Do not pass any auth token here since this runs on untrusted inputs
           ISSUES_TO_TRIAGE: '${{ steps.find_issues.outputs.issues_to_triage }}'
@@ -240,7 +240,7 @@ jobs:
         id: 'mint_identity_token'
         if: |-
           ${{ vars.APP_ID }}
-        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
+        uses: 'actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf' # v2
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'
