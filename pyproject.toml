@@ -33,9 +33,7 @@ classifiers = [
     "Topic :: Software Development :: Testing :: Unit",
     "Typing :: Typed",
 ]
-dependencies = [
-    "pydantic>=2.12.0,<3.0.0",
-]
+dependencies = [ "pluggy>=1.5.0,<2.0.0", "pydantic>=2.12.0,<3.0.0" ]
 
 optional-dependencies.sqlalchemy = [ "sqlalchemy>=2.0.0,<3.0.0" ]
 scripts.limbo_core = "limbo_core:main"

@@ -1,6 +1,6 @@
 """SQLAlchemy Generic Connector for database connections."""
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import Field, SecretStr, field_validator
 
@@ -8,6 +8,19 @@ from limbo_core.yaml_schema.interpolation import EnvInterpolator
 
 from .base import Connection
 from .errors import MissingPackageError
+
+try:
+    from sqlalchemy import create_engine
+    from sqlalchemy.engine import URL
+
+    SQLALCHEMY_AVAILABLE = True
+except ImportError:
+    SQLALCHEMY_AVAILABLE = False
+    create_engine = None  # type: ignore[assignment]
+    URL = None  # type: ignore[misc, assignment]
+
+if TYPE_CHECKING:
+    from sqlalchemy import Engine
 
 
 class SQLAlchemyConnection(Connection):
@@ -76,20 +89,25 @@ class SQLAlchemyConnection(Connection):
             return SecretStr(EnvInterpolator.interpolate(value))
         return value
 
-    def _build_url(self) -> str:
+    def _build_url(self) -> "URL":
         """Build the SQLAlchemy connection URL.
 
         Returns:
-            The SQLAlchemy connection URL string.
+            The SQLAlchemy URL object.
         """
-        dialect_driver = (
+        drivername = (
             f"{self.dialect}+{self.driver}" if self.driver else self.dialect
         )
-        password = self.password.get_secret_value()
-        port_part = f":{self.port}" if self.port else ""
-        return f"{dialect_driver}://{self.user}:{password}@{self.host}{port_part}/{self.database}"
+        return URL.create(
+            drivername=drivername,
+            username=self.user,
+            password=self.password.get_secret_value(),
+            host=self.host,
+            port=self.port,
+            database=self.database,
+        )
 
-    def connect(self) -> Any:
+    def connect(self) -> "Engine":
         """Establishes the connection using SQLAlchemy.
 
         Returns:
@@ -98,10 +116,8 @@ class SQLAlchemyConnection(Connection):
         Raises:
             MissingPackageError: If sqlalchemy is not installed.
         """
-        try:
-            from sqlalchemy import create_engine
-        except ImportError as err:
-            raise MissingPackageError("sqlalchemy") from err
+        if not SQLALCHEMY_AVAILABLE:
+            raise MissingPackageError("sqlalchemy")
 
         return create_engine(
             self._build_url(), connect_args=self.connection_args
