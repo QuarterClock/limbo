@@ -33,9 +33,15 @@ class ConnectionRegistry:
         Raises:
             ValueError: If the class is missing a 'type' field with a default.
         """
+        from pydantic_core import PydanticUndefined
+
         type_field = connection_class.model_fields.get("type")
-        type_value = type_field.default if type_field else None
-        if type_value is None:
+        if type_field is None:
+            msg = f"{connection_class.__name__}: missing 'type' field"
+            raise ValueError(msg)
+
+        type_value = type_field.default
+        if type_value is None or type_value is PydanticUndefined:
             msg = f"{connection_class.__name__}: missing 'type' field default"
             raise ValueError(msg)
 
