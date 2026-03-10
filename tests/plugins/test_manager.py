@@ -1,5 +1,8 @@
 """Tests for PluginManager."""
 
+import subprocess
+import sys
+from pathlib import Path
 from typing import Literal
 
 import pytest
@@ -226,3 +229,28 @@ class TestPluginManagerLoadPlugins:
         assert not fresh_plugin_manager._plugins_loaded
         fresh_plugin_manager.load_plugins()
         assert fresh_plugin_manager._plugins_loaded
+
+
+class TestNoImportSideEffects:
+    """Tests that package imports do not trigger plugin loading."""
+
+    def test_importing_connections_does_not_load_plugins(self) -> None:
+        """Importing connections must not register plugin connection types."""
+        script = """
+import sys
+sys.path.insert(0, {src!r})
+import limbo_core.connections
+from limbo_core.connections import ConnectionRegistry
+types = ConnectionRegistry.get_types()
+sys.exit(0 if "sqlalchemy" not in types else 1)
+"""
+        src = Path(__file__).resolve().parent.parent.parent / "src"
+        proc = subprocess.run(
+            [sys.executable, "-c", script.format(src=str(src))],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert proc.returncode == 0, (
+            f"connections import must not load plugins; stderr: {proc.stderr}"
+        )

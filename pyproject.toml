@@ -1,14 +1,13 @@
 [build-system]
 build-backend = "uv_build"
-
-requires = ["uv-build>=0.9.21,<0.10.0"]
+requires = [ "uv-build>=0.10.9,<0.11.0" ]
 
 [project]
 name = "limbo-core"
 version = "0.0.1a1"
 description = "A better place for data generation"
 readme = "README.md"
-authors = [{ name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" }]
+authors = [ { name = "Vladyslav Rudenko", email = "vl.val.rud@gmail.com" } ]
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -33,9 +32,8 @@ classifiers = [
     "Topic :: Software Development :: Testing :: Unit",
     "Typing :: Typed",
 ]
-dependencies = ["pluggy>=1.6.0,<2.0.0", "pydantic>=2.12.0,<3.0.0"]
-
-optional-dependencies.sqlalchemy = ["sqlalchemy>=2.0.0,<3.0.0"]
+dependencies = [ "pluggy>=1.6.0,<2.0.0", "pydantic>=2.12.0,<3.0.0" ]
+optional-dependencies.sqlalchemy = [ "sqlalchemy>=2.0.0,<3.0.0" ]
 scripts.limbo_core = "limbo_core:main"
 
 [dependency-groups]
@@ -48,26 +46,19 @@ dev = [
     { include-group = "tests" },
     { include-group = "typing" },
 ]
-docs = [
-    "mkdocs==1.6.1",
-    "mkdocs-material==9.7.1",
-    "mkdocstrings[python]==1.0.0",
-]
-codespell = ["codespell==2.4.1"]
-linting = ["pyproject-fmt==2.11.1", "ruff==0.14.10"]
-markdown = ["rumdl==0.0.208"]
-tests = ["pytest==9.0.2", "pytest-cov==7.0.0"]
-typing = ["mypy==1.19.1"]
+docs = [ "mkdocs==1.6.1", "mkdocs-material==9.7.5", "mkdocstrings[python]==1.0.3" ]
+codespell = [ "codespell==2.4.2" ]
+linting = [ "pyproject-fmt==2.16.2", "ruff==0.15.5" ]
+markdown = [ "rumdl==0.1.44" ]
+tests = [ "pytest==9.0.2", "pytest-cov==7.0.0" ]
+typing = [ "mypy==1.19.1" ]
 
 [tool.ruff]
 # Assume Python 3.11
 target-version = "py311"
-
 line-length = 80
 indent-width = 4
-
-include = ["bin/**/*.py", "pyproject.toml", "src/**/*.py", "tests/**/*.py"]
-
+include = [ "bin/**/*.py", "pyproject.toml", "src/**/*.py", "tests/**/*.py" ]
 exclude = [
     ".bzr",
     ".direnv",
@@ -99,11 +90,9 @@ exclude = [
 ]
 # Use preview features
 preview = true
-
 # Fix and show all errors and warnings.
 fix = true
 show-fixes = true
-
 format.indent-style = "space"
 format.quote-style = "double"
 format.line-ending = "lf"
@@ -162,10 +151,10 @@ lint.ignore = [
     "TRY004", # Prefer TypeError exception for invalid type
     "TRY300", # Consider moving this statement to an else block
 ]
-lint.per-file-ignores."__init__.py" = ["F403"]
-lint.per-file-ignores."tests/**/*.py" = ["B903", "D", "DOC", "INP"]
+lint.per-file-ignores."__init__.py" = [ "F403" ]
+lint.per-file-ignores."tests/**/*.py" = [ "B903", "D", "DOC", "INP" ]
 # Allow fix for all enabled rules (when `--fix`) is provided.
-lint.fixable = ["ALL"]
+lint.fixable = [ "ALL" ]
 lint.unfixable = []
 # Allow unused variables when underscore-prefixed.
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
@@ -189,57 +178,51 @@ max_supported_python = "3.13"
 
 [tool.pytest]
 minversion = "8.4.0"
-addopts = ["-ra", "-vv"]
-pythonpath = ["src"]
-testpaths = ["tests"]
+addopts = [ "-ra", "-vv" ]
+pythonpath = [ "src" ]
+testpaths = [ "tests" ]
 
-[tool.coverage.run]
-source = ["src"]
-relative_files = true
-branch = true
-
-[tool.coverage.report]
-exclude_also = [
+[tool.coverage]
+run.branch = true
+run.relative_files = true
+run.source = [ "src" ]
+report.exclude_also = [
     "@(abc\\.)?abstractmethod",
     "def __repr__",
+    "if __name__ == .__main__.:",
     "if 0:",
     "if TYPE_CHECKING:",
-    "if __name__ == .__main__.:",
     "raise AssertionError",
     "raise NotImplementedError",
 ]
-skip_empty = true
-skip_covered = true
-ignore_errors = true
-sort = "cover"
-
-[tool.coverage.html]
-directory = "coverage_html_report"
+report.ignore_errors = true
+report.skip_covered = true
+report.skip_empty = true
+report.sort = "cover"
+html.directory = "coverage_html_report"
 
 [tool.mypy]
-mypy_path = ["src"]
-files = ["src/**/*.py"]
+mypy_path = [ "src" ]
+files = [ "src/**/*.py" ]
 python_version = "3.11"
-disable_error_code = ["import-untyped"]
-
+disable_error_code = [ "import-untyped" ]
 explicit_package_bases = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
-
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_return_any = true
 warn_unused_configs = true
 warn_unreachable = true
-
 pretty = true
 
 [tool.rumdl]
 # Global configuration options
 line-length = 80
-disable = []
-include = ["*.md", "docs/**/*.md"]
+# TODO(Vlad): Enable it later
+disable = [ "MD044" ]
+include = [ "*.md", "docs/**/*.md" ]
 exclude = [
     ".bzr",
     ".direnv",
@@ -270,41 +253,19 @@ exclude = [
     "venv",
 ]
 respect-gitignore = true
-
-[tool.rumdl.MD003]
-style = "atx"
-
-[tool.rumdl.MD004]
-style = "dash"
-
-[tool.rumdl.MD013]
-line_length = 80
-code_blocks = false
-tables = false
-headings = true
-
+MD003.style = "atx"
+MD004.style = "dash"
+MD013.line_length = 80
+MD013.code_blocks = false
+MD013.tables = false
+MD013.headings = true
 # Allowed HTML elements
-[tool.rumdl.MD033]
-allowed_elements = []
-
+MD033.allowed_elements = []
 # Known names to replace
-[tool.rumdl.MD044]
-names = ["GitHub", "Markdown", "rumdl"]
-
-[tool.rumdl.MD045]
-placeholder_text = "TODO(ALL): Add image description"
-
-[tool.rumdl.MD046]
-style = "fenced"
-
-[tool.rumdl.MD048]
-style = "backtick"
-
-[tool.rumdl.MD049]
-style = "underscore"
-
-[tool.rumdl.MD050]
-style = "asterisk"
-
-[tool.rumdl.MD055]
-style = "no_leading_or_trailing"
+MD044.names = [ "GitHub", "Markdown", "rumdl" ]
+MD045.placeholder_text = "TODO(ALL): Add image description"
+MD046.style = "fenced"
+MD048.style = "backtick"
+MD049.style = "underscore"
+MD050.style = "asterisk"
+MD055.style = "no_leading_or_trailing"

@@ -46,7 +46,3 @@ __all__ = [
     "hookspec",
     "load_plugins",
 ]
-
-# Register the built-in plugin automatically when this module is imported
-_pm = get_plugin_manager()
-_pm.register(BuiltinPlugin(), name="limbo_builtin")
