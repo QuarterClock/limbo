@@ -3,6 +3,7 @@
 import pytest
 
 from limbo_core.connections.errors import MissingPackageError
+from limbo_core.errors import LimboError
 
 
 class TestMissingPackageError:
@@ -22,6 +23,7 @@ class TestMissingPackageError:
         assert "some_package" in str(exc_info.value)
 
     def test_inherits_from_exception(self) -> None:
-        """Test that MissingPackageError inherits from Exception."""
+        """Test that MissingPackageError inherits from LimboError."""
         error = MissingPackageError("test")
+        assert isinstance(error, LimboError)
         assert isinstance(error, Exception)

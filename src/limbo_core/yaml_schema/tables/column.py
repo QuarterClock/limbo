@@ -5,6 +5,7 @@ from pydantic import ValidationInfo, field_validator
 from limbo_core.errors import ContextMissingError
 from limbo_core.yaml_schema.artifacts.column import ArtifactColumn
 
+from .errors import GeneratorNotFoundError
 from .option import ColumnOptionBase
 
 
@@ -28,12 +29,12 @@ class TableColumn(ArtifactColumn):
 
         Raises:
             ContextMissingError: If the context is missing.
-            ValueError: If the generator is invalid.
+            GeneratorNotFoundError: If the generator is not in context.
         """
         if info.context is None:
             raise ContextMissingError
         if value not in info.context.generators:
-            raise ValueError(f"Generator {value} is not in the context")
+            raise GeneratorNotFoundError(value)
         return value
 
     @field_validator("options", mode="before")

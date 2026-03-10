@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from limbo_core.errors import ConnectionNotFoundError
+
 
 class Context(BaseModel):
     """Context for data generation and validation hooks."""
@@ -37,12 +39,11 @@ class Context(BaseModel):
             The connection object.
 
         Raises:
-            KeyError: If the connection does not exist.
+            ConnectionNotFoundError: If the connection does not exist.
         """
         if name not in self.connections:
-            available = ", ".join(self.connections.keys()) or "none"
-            raise KeyError(
-                f"Connection '{name}' not found. "
-                f"Available connections: {available}"
+            raise ConnectionNotFoundError(
+                connection_name=name,
+                available_connections=self.connections.keys(),
             )
         return self.connections[name]

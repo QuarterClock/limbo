@@ -5,6 +5,10 @@ from typing import Annotated, Any, ClassVar, Union
 from pydantic import Discriminator, TypeAdapter
 
 from .base import Connection
+from .errors import (
+    MissingConnectionTypeDefaultError,
+    MissingConnectionTypeFieldError,
+)
 
 
 class ConnectionRegistry:
@@ -31,19 +35,18 @@ class ConnectionRegistry:
             connection_class: The connection class to add.
 
         Raises:
-            ValueError: If the class is missing a 'type' field with a default.
+            MissingConnectionTypeFieldError: If the class has no `type` field.
+            MissingConnectionTypeDefaultError: If `type` has no default.
         """
         from pydantic_core import PydanticUndefined
 
         type_field = connection_class.model_fields.get("type")
         if type_field is None:
-            msg = f"{connection_class.__name__}: missing 'type' field"
-            raise ValueError(msg)
+            raise MissingConnectionTypeFieldError(connection_class.__name__)
 
         type_value = type_field.default
         if type_value is None or type_value is PydanticUndefined:
-            msg = f"{connection_class.__name__}: missing 'type' field default"
-            raise ValueError(msg)
+            raise MissingConnectionTypeDefaultError(connection_class.__name__)
 
         cls._types[type_value] = connection_class
         cls._adapter = None  # Invalidate cached adapter

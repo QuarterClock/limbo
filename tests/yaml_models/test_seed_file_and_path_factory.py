@@ -6,6 +6,11 @@ import pytest
 
 from limbo_core.context import Context
 from limbo_core.errors import ContextMissingError
+from limbo_core.yaml_schema.seeds.errors import (
+    AbsoluteSeedPathNotAllowedError,
+    InvalidSeedPathTypeError,
+    UnsupportedSeedPathPrefixError,
+)
 from limbo_core.yaml_schema.seeds.file import SeedFile
 from limbo_core.yaml_schema.seeds.path_factory import PathFactory
 
@@ -57,9 +62,11 @@ class TestPathFactory:
         )
 
     def test_non_string_raises(self, factory: PathFactory) -> None:
-        """Verify non-string input raises ValueError."""
-        with pytest.raises(ValueError, match="Raw YAML value is not a string"):
-            factory.from_raw(123)  # type: ignore[arg-type]
+        """Verify non-string input raises InvalidSeedPathTypeError."""
+        with pytest.raises(
+            InvalidSeedPathTypeError, match="Raw YAML value is not a string"
+        ):
+            factory.from_raw(123)
 
     def test_absolute_path_raises(
         self, factory: PathFactory, tmp_path: Path
@@ -68,7 +75,9 @@ class TestPathFactory:
         abs_file = tmp_path / "abs.csv"
         abs_file.write_text("id\n1\n")
 
-        with pytest.raises(ValueError, match="Path is absolute"):
+        with pytest.raises(
+            AbsoluteSeedPathNotAllowedError, match="Path is absolute"
+        ):
             factory.from_raw(str(abs_file))
 
     def test_nonexistent_relative_path_raises(
@@ -93,8 +102,10 @@ class TestPathFactory:
     def test_unsupported_prefix_raises(
         self, factory_with_paths: PathFactory
     ) -> None:
-        """Verify unsupported prefixes raise ValueError."""
-        with pytest.raises(ValueError, match="Prefix ref is not supported"):
+        """Verify unsupported prefixes raise UnsupportedSeedPathPrefixError."""
+        with pytest.raises(
+            UnsupportedSeedPathPrefixError, match="Prefix ref is not supported"
+        ):
             factory_with_paths.from_raw("${ref:users.id}")
 
     def test_base_only_prefix_returns_base(

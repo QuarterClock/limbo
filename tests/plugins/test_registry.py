@@ -5,6 +5,7 @@ from typing import Literal
 import pytest
 
 from limbo_core.connections import Connection, ConnectionRegistry
+from limbo_core.connections.errors import MissingConnectionTypeDefaultError
 
 
 class MockConnection(Connection):
@@ -83,7 +84,10 @@ class TestConnectionRegistryAdd:
     def test_add_connection_without_type_default_raises(self) -> None:
         """Test that adding a connection without type default raises."""
         ConnectionRegistry.clear()
-        with pytest.raises(ValueError, match="missing 'type' field default"):
+        with pytest.raises(
+            MissingConnectionTypeDefaultError,
+            match="missing 'type' field default",
+        ):
             ConnectionRegistry.add(NoTypeFieldConnection)
 
 

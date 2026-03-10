@@ -10,6 +10,8 @@ from limbo_core.context import Context
 from limbo_core.yaml_schema.artifacts.data_types import DataType
 from limbo_core.yaml_schema.interpolation import ValueInterpolator
 
+from .errors import UnknownOptionPrefixError
+
 PrimitiveType = str | int | float | bool | dt.date | dt.datetime
 
 
@@ -27,7 +29,7 @@ class ColumnOptionBase(BaseModel, ABC):
             The appropriate option subclass instance.
 
         Raises:
-            ValueError: If the value cannot be parsed.
+            UnknownOptionPrefixError: If the option prefix is unsupported.
         """
         if not isinstance(raw, str):
             return ColumnOptionPrimitiveValue(
@@ -47,7 +49,7 @@ class ColumnOptionBase(BaseModel, ABC):
         try:
             data_type = DataType(prefix)
         except ValueError as err:
-            raise ValueError(f"Unknown option prefix: {prefix}") from err
+            raise UnknownOptionPrefixError(prefix) from err
 
         return ColumnOptionPrimitiveValue(
             value=ValueInterpolator.cast(data_type, content),

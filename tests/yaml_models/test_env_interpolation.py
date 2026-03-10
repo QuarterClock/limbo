@@ -4,6 +4,9 @@ import pytest
 
 from limbo_core.connections import SQLAlchemyConnection
 from limbo_core.yaml_schema.interpolation import EnvInterpolator
+from limbo_core.yaml_schema.interpolation.errors import (
+    EnvironmentVariableNotSetError,
+)
 
 
 class TestEnvInterpolator:
@@ -67,10 +70,11 @@ class TestEnvInterpolator:
     def test_interpolate_missing_env_var_no_default_raises(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Verify missing env var without default raises ValueError."""
+        """Verify missing env var without default raises custom error."""
         monkeypatch.delenv("MISSING_VAR", raising=False)
         with pytest.raises(
-            ValueError, match="Environment variable 'MISSING_VAR'"
+            EnvironmentVariableNotSetError,
+            match="Environment variable 'MISSING_VAR'",
         ):
             EnvInterpolator.interpolate("${env:MISSING_VAR}")
 

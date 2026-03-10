@@ -6,6 +6,12 @@ from typing import Any, ClassVar
 
 from limbo_core.yaml_schema.artifacts.data_types import DataType
 
+from .errors import (
+    DataTypeInferenceError,
+    InvalidBooleanValueError,
+    UnsupportedDataTypeError,
+)
+
 
 class ValueInterpolator:
     """Interpolates typed values using ${type:value} syntax.
@@ -79,7 +85,7 @@ class ValueInterpolator:
             The casted value.
 
         Raises:
-            ValueError: If the data type is unsupported or casting fails.
+            UnsupportedDataTypeError: If the target data type is unsupported.
         """
         match data_type:
             case DataType.STRING:
@@ -96,7 +102,7 @@ class ValueInterpolator:
                 return cls._parse_datetime(raw)
             case DataType.TIMESTAMP:
                 return cls._parse_timestamp(raw)
-        raise ValueError(f"Unsupported data type: {data_type}")
+        raise UnsupportedDataTypeError(data_type)
 
     @classmethod
     def infer_type(cls, value: Any) -> DataType:
@@ -109,7 +115,7 @@ class ValueInterpolator:
             The inferred data type.
 
         Raises:
-            ValueError: If the type cannot be inferred.
+            DataTypeInferenceError: If the type cannot be inferred.
         """
         match value:
             case str():
@@ -124,7 +130,7 @@ class ValueInterpolator:
                 return DataType.DATETIME
             case dt.date():
                 return DataType.DATE
-        raise ValueError(f"Cannot infer data type for: {type(value).__name__}")
+        raise DataTypeInferenceError(value)
 
     @classmethod
     def _parse_bool(cls, value: str) -> bool:
@@ -137,14 +143,14 @@ class ValueInterpolator:
             The parsed boolean.
 
         Raises:
-            ValueError: If the value is not a valid boolean string.
+            InvalidBooleanValueError: If the string is not a boolean literal.
         """
         lowered = value.strip().lower()
         if lowered in cls._BOOL_TRUE:
             return True
         if lowered in cls._BOOL_FALSE:
             return False
-        raise ValueError(f"Invalid boolean value: {value}")
+        raise InvalidBooleanValueError(value)
 
     @classmethod
     def _parse_datetime(cls, value: str) -> dt.datetime:

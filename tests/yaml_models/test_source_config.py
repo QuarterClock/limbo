@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from limbo_core.connections import SQLAlchemyConnection
 from limbo_core.context import Context
-from limbo_core.errors import ContextMissingError
+from limbo_core.errors import ConnectionNotFoundError, ContextMissingError
 from limbo_core.yaml_schema.sources.config import SourceConfig
 
 
@@ -89,9 +89,9 @@ class TestContextConnectionManagement:
         assert context.get_connection("test_db") is test_connection
 
     def test_get_connection_missing_raises(self) -> None:
-        """Verify missing connection raises KeyError."""
+        """Verify missing connection raises ConnectionNotFoundError."""
         context = Context(generators={}, paths={}, connections={})
-        with pytest.raises(KeyError) as exc_info:
+        with pytest.raises(ConnectionNotFoundError) as exc_info:
             context.get_connection("missing_db")
         assert "missing_db" in str(exc_info.value)
         assert "not found" in str(exc_info.value)
@@ -105,6 +105,6 @@ class TestContextConnectionManagement:
             paths={},
             connections={"existing_db": test_connection},
         )
-        with pytest.raises(KeyError) as exc_info:
+        with pytest.raises(ConnectionNotFoundError) as exc_info:
             context.get_connection("wrong_name")
         assert "existing_db" in str(exc_info.value)

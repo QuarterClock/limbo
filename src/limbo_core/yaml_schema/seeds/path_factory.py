@@ -4,6 +4,12 @@ from typing import Any, ClassVar
 
 from limbo_core.context import Context
 
+from .errors import (
+    AbsoluteSeedPathNotAllowedError,
+    InvalidSeedPathTypeError,
+    UnsupportedSeedPathPrefixError,
+)
+
 
 class PathFactory:
     """Factory for creating Path instances from raw YAML values."""
@@ -28,20 +34,20 @@ class PathFactory:
             The created Path instance.
 
         Raises:
-            ValueError: If the raw YAML value is not a valid path.
+            InvalidSeedPathTypeError: If the raw YAML value is not a string.
+            AbsoluteSeedPathNotAllowedError: If a plain path is absolute.
             NotImplementedError: If the raw YAML value is not supported.
             FileNotFoundError: If the path does not exist.
+            UnsupportedSeedPathPrefixError: If path prefix is unsupported.
         """
         if not isinstance(raw, str):
-            raise ValueError("Raw YAML value is not a string")
+            raise InvalidSeedPathTypeError
 
         matches = list(self._PREFIX_RE.finditer(raw))
         if not matches:
             path = Path(raw)
             if path.is_absolute():
-                raise ValueError(
-                    "Path is absolute.Must be relative to the project root."
-                )
+                raise AbsoluteSeedPathNotAllowedError
             if not path.exists():
                 raise FileNotFoundError(f"Path {path} does not exist")
             return path
@@ -53,7 +59,7 @@ class PathFactory:
             matches[0].group(2),
         )
         if not prefix == "path":
-            raise ValueError(f"Prefix {prefix} is not supported")
+            raise UnsupportedSeedPathPrefixError(prefix)
 
         path = self._resolve_path(content)
         derivative = self._PREFIX_RE.sub("", raw).strip("/ ")

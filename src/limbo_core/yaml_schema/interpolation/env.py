@@ -4,6 +4,8 @@ import os
 import re
 from typing import ClassVar
 
+from .errors import EnvironmentVariableNotSetError
+
 
 class EnvInterpolator:
     """Interpolates environment variables in strings.
@@ -36,10 +38,7 @@ class EnvInterpolator:
                 return env_value
             if default is not None:
                 return default
-            raise ValueError(
-                f"Environment variable '{var_name}' is not set "
-                f"and no default provided"
-            )
+            raise EnvironmentVariableNotSetError(var_name)
 
         return cls._ENV_RE.sub(replace_match, value)
 

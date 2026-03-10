@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from limbo_core.context import Context
 from limbo_core.errors import ContextMissingError
@@ -49,11 +50,9 @@ class TestTableColumnGeneratorValidation:
             })
 
     def test_invalid_generator_raises(self, context: Context) -> None:
-        """Verify invalid generator raises ValueError."""
+        """Verify invalid generator raises ValidationError."""
         gen = "unknown.gen"
-        with pytest.raises(
-            ValueError, match=f"Generator {gen} is not in the context"
-        ):
+        with pytest.raises(ValidationError) as exc_info:
             TableColumn.model_validate(
                 {
                     "name": "full_name",
@@ -62,6 +61,7 @@ class TestTableColumnGeneratorValidation:
                 },
                 context=context,
             )
+        assert f"Generator {gen} is not in the context" in str(exc_info.value)
 
 
 class TestTableColumnOptionsValidation:

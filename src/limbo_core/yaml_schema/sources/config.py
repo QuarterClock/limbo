@@ -2,8 +2,10 @@ from typing import Any
 
 from pydantic import ValidationInfo, field_validator
 
-from limbo_core.errors import ContextMissingError
+from limbo_core.errors import ConnectionNotFoundError, ContextMissingError
 from limbo_core.yaml_schema.artifacts.config import ArtifactConfig
+
+from .errors import UnknownSourceConnectionError
 
 
 class SourceConfig(ArtifactConfig):
@@ -29,14 +31,14 @@ class SourceConfig(ArtifactConfig):
 
         Raises:
             ContextMissingError: If the context is missing.
-            ValueError: If the connection does not exist.
+            UnknownSourceConnectionError: If the connection does not exist.
         """
         if info.context is None:
             raise ContextMissingError
         try:
             info.context.get_connection(value)
-        except KeyError as err:
-            raise ValueError(str(err)) from err
+        except ConnectionNotFoundError as err:
+            raise UnknownSourceConnectionError(err.connection_name) from err
         return value
 
     def get_connection(self, context: Any) -> Any:

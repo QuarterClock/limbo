@@ -7,6 +7,8 @@ from typing import Any
 import pytest
 
 from limbo_core.yaml_schema.artifacts.data_types import DataType
+from limbo_core.yaml_schema.interpolation.errors import InvalidBooleanValueError
+from limbo_core.yaml_schema.tables.errors import UnknownOptionPrefixError
 from limbo_core.yaml_schema.tables.option import (
     ColumnOptionBase,
     ColumnOptionPrimitiveValue,
@@ -76,8 +78,10 @@ class TestColumnOptionFromRaw:
         assert opt.value == expected_value
 
     def test_boolean_invalid_raises(self) -> None:
-        """Verify invalid boolean value raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid boolean value"):
+        """Verify invalid boolean value raises InvalidBooleanValueError."""
+        with pytest.raises(
+            InvalidBooleanValueError, match="Invalid boolean value"
+        ):
             ColumnOptionBase.from_raw("${boolean:unknown}")
 
 
@@ -121,8 +125,10 @@ class TestColumnOptionEdgeCases:
         assert opt.value == "${string:a}${string:b}"
 
     def test_invalid_prefix_raises(self) -> None:
-        """Verify unknown prefix raises ValueError."""
-        with pytest.raises(ValueError, match="Unknown option prefix"):
+        """Verify unknown prefix raises UnknownOptionPrefixError."""
+        with pytest.raises(
+            UnknownOptionPrefixError, match="Unknown option prefix"
+        ):
             ColumnOptionBase.from_raw("${unknown:value}")
 
     def test_serialize_roundtrip(self) -> None:
