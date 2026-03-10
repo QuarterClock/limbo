@@ -12,6 +12,8 @@ from .tables import Table
 def _validate_connections(value: Any) -> list[Connection]:
     """Validate connections using the registry.
 
+    Ensures plugins (and thus connection types) are loaded before validation.
+
     Args:
         value: Raw connection data to validate.
 
@@ -20,6 +22,9 @@ def _validate_connections(value: Any) -> list[Connection]:
     """
     if not isinstance(value, list):
         return value  # type: ignore[no-any-return]
+    from limbo_core.plugins import load_plugins
+
+    load_plugins()
     return ConnectionRegistry.validate_list(value)
 
 

@@ -28,11 +28,20 @@ from typing import TYPE_CHECKING
 
 import pluggy
 
+from .builtin import BuiltinPlugin
 from .hookspecs import LimboHookSpec
 from .markers import PROJECT_NAME
 
 if TYPE_CHECKING:
     from limbo_core.connections import Connection
+
+BUILTIN_PLUGIN_NAME = "limbo_builtin"
+
+
+def _ensure_builtin_registered(manager: PluginManager) -> None:
+    """Register the built-in plugin if not already registered (idempotent)."""
+    if BUILTIN_PLUGIN_NAME not in manager.get_plugin_names():
+        manager.register(BuiltinPlugin(), name=BUILTIN_PLUGIN_NAME)
 
 
 class PluginManager:
@@ -202,10 +211,14 @@ class PluginManager:
 def get_plugin_manager() -> PluginManager:
     """Get the global plugin manager instance.
 
+    Registers the built-in plugin on first access (idempotent).
+
     Returns:
         The singleton PluginManager instance.
     """
-    return PluginManager.get_instance()
+    manager = PluginManager.get_instance()
+    _ensure_builtin_registered(manager)
+    return manager
 
 
 def load_plugins() -> None:
