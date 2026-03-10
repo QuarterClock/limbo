@@ -27,33 +27,33 @@ repos:
       args: [--branch, main, --branch, master, --branch, develop]
       stages: [pre-commit]
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.36.0
+    rev: 0.37.0
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
       - id: check-renovate
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.10
+    rev: v0.15.5
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.0.208
+    rev: v0.1.45
     hooks:
       - id: rumdl
         args: [--fix]
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
     - id: codespell
       additional_dependencies: [tomli]
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.11.1"
+    rev: "v2.16.2"
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.21
+    rev: 0.10.9
     hooks:
       - id: uv-lock
       - id: uv-sync
