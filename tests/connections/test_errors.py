@@ -2,7 +2,11 @@
 
 import pytest
 
-from limbo_core.connections.errors import MissingPackageError
+from limbo_core.adapters.connections.errors import (
+    MissingPackageError,
+    UnknownConnectionBackendError,
+)
+from limbo_core.domain.errors import DomainValidationError
 from limbo_core.errors import LimboError
 
 
@@ -27,3 +31,18 @@ class TestMissingPackageError:
         error = MissingPackageError("test")
         assert isinstance(error, LimboError)
         assert isinstance(error, Exception)
+
+
+class TestUnknownConnectionBackendError:
+    """Tests for UnknownConnectionBackendError exception."""
+
+    def test_error_message_contains_backend_key(self) -> None:
+        """Test that the error message includes the offending backend key."""
+        error = UnknownConnectionBackendError("redis")
+        assert "redis" in str(error)
+
+    def test_inherits_from_value_error(self) -> None:
+        """DomainValidationError inherits ValueError, so this error does too."""
+        error = UnknownConnectionBackendError("unknown_backend")
+        assert isinstance(error, DomainValidationError)
+        assert isinstance(error, ValueError)

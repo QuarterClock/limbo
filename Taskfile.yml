@@ -67,7 +67,7 @@ tasks:
   update:
     desc: Update all dependencies
     cmds:
-      - uv sync --all-groups --all-extras
+      - uv sync --upgrade --all-groups --all-extras
       - uv lock --upgrade
       - uv run pre-commit autoupdate
 

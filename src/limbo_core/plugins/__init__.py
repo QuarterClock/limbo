@@ -6,20 +6,51 @@ with custom connections, generators, persistors, and other components.
 Quick Start:
     Loading plugins in your application::
 
-        from limbo_core.plugins import load_plugins
+        from limbo_core.plugins import PluginManager
 
-        # Load all plugins (including built-in and external)
-        load_plugins()
+        manager = PluginManager()
+        manager.load_plugins()
 
     Creating a plugin::
 
+        from limbo_core.application.interfaces import (
+            BackendRegistration,
+        )
         from limbo_core.plugins import hookimpl
-        from limbo_core.connections import Connection
 
         class MyPlugin:
             @hookimpl
-            def limbo_register_connections(self) -> list[type[Connection]]:
-                return [MyCustomConnection]
+            def limbo_register_connections(
+                self,
+            ) -> list[BackendRegistration[ConnectionBackend]]:
+                return [
+                    BackendRegistration(
+                        key="my_custom_connection",
+                        backend_class=MyCustomConnection,
+                    )
+                ]
+
+            @hookimpl
+            def limbo_register_value_readers(
+                self,
+            ) -> list[BackendRegistration[ValueReaderBackend]]:
+                return [
+                    BackendRegistration(
+                        key="env",
+                        backend_class=OsEnvReader,
+                    )
+                ]
+
+            @hookimpl
+            def limbo_register_path_backends(
+                self,
+            ) -> list[BackendRegistration[PathBackendPort]]:
+                return [
+                    BackendRegistration(
+                        key="file",
+                        backend_class=FilesystemPathBackend,
+                    )
+                ]
 
     Registering a plugin package (in pyproject.toml)::
 
@@ -30,19 +61,10 @@ Public API:
     - hookspec: Decorator for defining hook specifications
     - hookimpl: Decorator for implementing hooks
     - PluginManager: Central plugin manager class
-    - get_plugin_manager: Get the global plugin manager instance
-    - load_plugins: Load all plugins and register components
 """
 
 from .builtin import BuiltinPlugin
-from .manager import PluginManager, get_plugin_manager, load_plugins
 from .markers import hookimpl, hookspec
+from .plugin_manager import PluginManager
 
-__all__ = [
-    "BuiltinPlugin",
-    "PluginManager",
-    "get_plugin_manager",
-    "hookimpl",
-    "hookspec",
-    "load_plugins",
-]
+__all__ = ["BuiltinPlugin", "PluginManager", "hookimpl", "hookspec"]

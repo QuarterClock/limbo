@@ -32,24 +32,19 @@ classifiers = [
     "Topic :: Software Development :: Testing :: Unit",
     "Typing :: Typed",
 ]
-dependencies = [ "pluggy>=1.6.0,<2.0.0", "pydantic>=2.12.0,<3.0.0" ]
+dependencies = [ "pluggy>=1.6.0,<2.0.0" ]
 optional-dependencies.sqlalchemy = [ "sqlalchemy>=2.0.0,<3.0.0" ]
-scripts.limbo_core = "limbo_core:main"
 
 [dependency-groups]
 dev = [
     "pre-commit==4.5.1",
-    { include-group = "codespell" },
     { include-group = "docs" },
     { include-group = "linting" },
-    { include-group = "markdown" },
     { include-group = "tests" },
     { include-group = "typing" },
 ]
 docs = [ "mkdocs==1.6.1", "mkdocs-material==9.7.5", "mkdocstrings[python]==1.0.3" ]
-codespell = [ "codespell==2.4.2" ]
-linting = [ "pyproject-fmt==2.16.2", "ruff==0.15.5" ]
-markdown = [ "rumdl==0.1.44" ]
+linting = [ "codespell==2.4.2", "pyproject-fmt==2.18.1", "ruff==0.15.5", "rumdl==0.1.46" ]
 tests = [ "pytest==9.0.2", "pytest-cov==7.0.0" ]
 typing = [ "mypy==1.19.1" ]
 
