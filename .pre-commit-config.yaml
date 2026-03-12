@@ -8,24 +8,24 @@ default_stages:
   - pre-commit
 
 default_language_version:
-    python: python3.11
+  python: python3.11
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-    - id: check-added-large-files
-    - id: check-case-conflict
-    - id: check-illegal-windows-names
-    - id: end-of-file-fixer
-    - id: trailing-whitespace
-    - id: check-symlinks
-    - id: destroyed-symlinks
-    - id: check-toml
-    - id: check-yaml
-    - id: no-commit-to-branch
-      args: [--branch, main, --branch, master, --branch, develop]
-      stages: [pre-commit]
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-illegal-windows-names
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master, --branch, develop]
+        stages: [pre-commit]
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.37.0
     hooks:
@@ -39,17 +39,17 @@ repos:
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.1.44
+    rev: v0.1.46
     hooks:
       - id: rumdl
         args: [--fix]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2
     hooks:
-    - id: codespell
-      additional_dependencies: [tomli]
+      - id: codespell
+        additional_dependencies: [tomli]
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.16.2"
+    rev: "v2.18.1"
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/astral-sh/uv-pre-commit

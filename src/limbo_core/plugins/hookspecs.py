@@ -11,14 +11,23 @@ Hook Categories:
 Example:
     Implementing hooks in a plugin::
 
+        from limbo_core.application.interfaces import (
+            BackendRegistration,
+        )
         from limbo_core.plugins.markers import hookimpl
-        from limbo_core.connections import Connection
 
         class MyPlugin:
             @hookimpl
-            def limbo_register_connections(self) -> list[type[Connection]]:
+            def limbo_register_connections(
+                self,
+            ) -> list[BackendRegistration[ConnectionBackend]]:
                 from my_plugin.connections import MyCustomConnection
-                return [MyCustomConnection]
+                return [
+                    BackendRegistration(
+                        key="my_custom",
+                        backend_class=MyCustomConnection,
+                    )
+                ]
 """
 
 from __future__ import annotations
@@ -28,7 +37,12 @@ from typing import TYPE_CHECKING
 from .markers import hookspec
 
 if TYPE_CHECKING:
-    from limbo_core.connections import Connection
+    from limbo_core.application.interfaces import (
+        BackendRegistration,
+        ConnectionBackend,
+        PathBackend,
+        ValueReaderBackend,
+    )
 
 
 class LimboHookSpec:
@@ -39,27 +53,53 @@ class LimboHookSpec:
     from all plugins are collected and processed.
     """
 
-    # =========================================================================
-    # Connection Hooks
-    # =========================================================================
-
     @hookspec
     def limbo_register_connections(  # type: ignore[empty-body]
         self,
-    ) -> list[type[Connection]]:
+    ) -> list[BackendRegistration[ConnectionBackend]]:
         """Register custom connection types.
 
         Implement this hook to register custom database connection types
         that can be used in project configurations.
 
         Returns:
-            List of Connection subclasses to register. Each class must have
-            a `type` field with a unique Literal default value.
+            List of explicit connection backend registrations.
 
         Example:
             >>> @hookimpl
-            ... def limbo_register_connections(self) -> list[type[Connection]]:
-            ...     return [PostgreSQLConnection, MySQLConnection]
+            ... def limbo_register_connections(
+            ...     self,
+            ... ) -> list[BackendRegistration[ConnectionBackend]]:
+            ...     return [
+            ...         BackendRegistration(
+            ...             key="postgresql",
+            ...             backend_class=PostgreSQLConnection,
+            ...         ),
+            ...         BackendRegistration(
+            ...             key="mysql",
+            ...             backend_class=MySQLConnection,
+            ...         ),
+            ...     ]
+        """
+
+    @hookspec
+    def limbo_register_value_readers(  # type: ignore[empty-body]
+        self,
+    ) -> list[BackendRegistration[ValueReaderBackend]]:
+        """Register value readers for lookup-backed config resolution.
+
+        Returns:
+            List of explicit value reader backend registrations.
+        """
+
+    @hookspec
+    def limbo_register_path_backends(  # type: ignore[empty-body]
+        self,
+    ) -> list[BackendRegistration[PathBackend]]:
+        """Register path backends for runtime resource resolution.
+
+        Returns:
+            List of explicit path backend registrations.
         """
 
     # =========================================================================

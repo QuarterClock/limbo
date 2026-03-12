@@ -1,21 +1,43 @@
-"""Tests for PluginManager."""
+"""Tests for instance-based PluginManager."""
+
+from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING
 
 import pytest
 
-from limbo_core.connections import Connection, ConnectionRegistry
-from limbo_core.plugins import PluginManager, get_plugin_manager, hookimpl
+from limbo_core.adapters.connections import ConnectionRegistry
+from limbo_core.adapters.filesystem import PathBackendRegistry
+from limbo_core.adapters.value_reader import ValueReaderRegistry
+from limbo_core.application.interfaces import (
+    BackendRegistration,
+    ConnectionBackend,
+    PathBackend,
+    ValueReaderBackend,
+)
+from limbo_core.domain.entities import ResolvedResource
+from limbo_core.plugins import PluginManager, hookimpl
+
+if TYPE_CHECKING:
+    from limbo_core.domain.entities import ConnectionBackendSpec
 
 
-class PluginTestConnection(Connection):
-    """Connection for plugin tests."""
+class PluginTestConnectionBackend(ConnectionBackend):
+    """Connection backend used for plugin tests."""
 
-    type: Literal["test_plugin_conn"] = "test_plugin_conn"
     name: str
+
+    def __init__(self, *, name: str) -> None:
+        self.name = name
+
+    @classmethod
+    def from_spec(
+        cls, spec: ConnectionBackendSpec
+    ) -> PluginTestConnectionBackend:
+        return cls(name=spec.name)
 
     def connect(self) -> None:
         """Mock connect."""
@@ -25,82 +47,142 @@ class SamplePlugin:
     """Sample plugin implementing connection hook."""
 
     @hookimpl
-    def limbo_register_connections(self) -> list[type[Connection]]:
+    def limbo_register_connections(
+        self,
+    ) -> list[BackendRegistration[ConnectionBackend]]:
         """Register test connection."""
-        return [PluginTestConnection]
+        return [
+            BackendRegistration(
+                key="test_plugin_conn",
+                backend_class=PluginTestConnectionBackend,
+            )
+        ]
 
 
 class EmptyPlugin:
-    """Plugin that returns empty list."""
+    """Plugin that returns an empty connection list."""
 
     @hookimpl
-    def limbo_register_connections(self) -> list[type[Connection]]:
+    def limbo_register_connections(
+        self,
+    ) -> list[BackendRegistration[ConnectionBackend]]:
         """Return empty list."""
         return []
 
 
-class NonePlugin:
-    """Plugin that returns None (edge case)."""
+class _StaticReader(ValueReaderBackend):
+    def get(self, key: str, default: str | None = None) -> str | None:
+        return f"value:{key}"
+
+
+class _MockPathBackend(PathBackend):
+    def resolve(
+        self, path_spec: object, *, base: object | None = None
+    ) -> ResolvedResource:
+        return ResolvedResource(backend="mock", uri="mock://resource")
+
+
+class ReaderPlugin:
+    """Plugin that contributes value readers."""
 
     @hookimpl
-    def limbo_register_connections(self) -> None:
-        """Return None."""
-        return
+    def limbo_register_value_readers(
+        self,
+    ) -> list[BackendRegistration[ValueReaderBackend]]:
+        return [BackendRegistration(key="static", backend_class=_StaticReader)]
+
+
+class PathPlugin:
+    """Plugin that contributes path backends."""
+
+    @hookimpl
+    def limbo_register_path_backends(
+        self,
+    ) -> list[BackendRegistration[PathBackend]]:
+        return [BackendRegistration(key="mock", backend_class=_MockPathBackend)]
 
 
 @pytest.fixture
-def fresh_plugin_manager() -> PluginManager:
-    """Create a fresh PluginManager instance without singleton."""
-    return PluginManager()
+def connection_registry() -> ConnectionRegistry:
+    """Provide isolated connection registry per test."""
+    return ConnectionRegistry()
 
 
-@pytest.fixture(autouse=True)
-def reset_state() -> None:
-    """Reset singleton and registry state after each test."""
-    # Store original registry state
-    original_types = ConnectionRegistry._types.copy()
-    original_adapter = ConnectionRegistry._adapter
-
-    yield
-
-    # Reset singleton
-    PluginManager.reset_instance()
-
-    # Restore registry state
-    ConnectionRegistry._types = original_types
-    ConnectionRegistry._adapter = original_adapter
+@pytest.fixture
+def value_reader_registry() -> ValueReaderRegistry:
+    """Provide isolated value reader registry per test."""
+    return ValueReaderRegistry()
 
 
-class TestPluginManagerSingleton:
-    """Tests for PluginManager singleton pattern."""
+@pytest.fixture
+def path_backend_registry() -> PathBackendRegistry:
+    """Provide isolated path backend registry per test."""
+    return PathBackendRegistry()
 
-    def test_get_instance_returns_same_instance(self) -> None:
-        """Test that get_instance returns the same instance."""
-        PluginManager.reset_instance()
-        instance1 = PluginManager.get_instance()
-        instance2 = PluginManager.get_instance()
-        assert instance1 is instance2
 
-    def test_reset_instance_clears_singleton(self) -> None:
-        """Test that reset_instance clears the singleton."""
-        PluginManager.reset_instance()
-        instance1 = PluginManager.get_instance()
-        PluginManager.reset_instance()
-        instance2 = PluginManager.get_instance()
-        assert instance1 is not instance2
+@pytest.fixture
+def fresh_plugin_manager(
+    connection_registry: ConnectionRegistry,
+    value_reader_registry: ValueReaderRegistry,
+    path_backend_registry: PathBackendRegistry,
+) -> PluginManager:
+    """Create a fresh PluginManager instance."""
+    return PluginManager(
+        connection_registry=connection_registry,
+        value_reader_registry=value_reader_registry,
+        path_backend_registry=path_backend_registry,
+    )
 
-    def test_get_plugin_manager_function(self) -> None:
-        """Test the convenience function get_plugin_manager."""
-        PluginManager.reset_instance()
-        pm = get_plugin_manager()
-        assert pm is PluginManager.get_instance()
+
+class TestPluginManagerInitialization:
+    """Tests for manager initialization behavior."""
+
+    def test_builtin_plugin_registered(
+        self, fresh_plugin_manager: PluginManager
+    ) -> None:
+        """Built-in plugin is registered at initialization time."""
+        assert "limbo_builtin" in fresh_plugin_manager.get_plugin_names()
+
+    def test_managers_are_independent(self) -> None:
+        """Separate manager instances maintain separate plugin state."""
+        first = PluginManager(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            path_backend_registry=PathBackendRegistry(),
+        )
+        second = PluginManager(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            path_backend_registry=PathBackendRegistry(),
+        )
+        first.register(SamplePlugin(), name="first")
+        assert "first" in first.get_plugin_names()
+        assert "first" not in second.get_plugin_names()
+
+    def test_get_plugins_includes_builtin(
+        self, fresh_plugin_manager: PluginManager
+    ) -> None:
+        """Built-in plugin appears in get_plugins listing."""
+        plugins = fresh_plugin_manager.get_plugins()
+        assert plugins
+        assert "limbo_builtin" in fresh_plugin_manager.get_plugin_names()
+
+    def test_ensure_builtin_registered_is_idempotent(
+        self, fresh_plugin_manager: PluginManager
+    ) -> None:
+        """Re-running builtin registration does not duplicate plugin entry."""
+        before = fresh_plugin_manager.get_plugin_names().count("limbo_builtin")
+        fresh_plugin_manager._ensure_builtin_registered()
+        after = fresh_plugin_manager.get_plugin_names().count("limbo_builtin")
+        assert before == 1
+        assert after == 1
 
 
 class TestPluginManagerRegistration:
-    """Tests for plugin registration."""
+    """Tests for plugin registration lifecycle."""
 
     def test_register_plugin(self, fresh_plugin_manager: PluginManager) -> None:
-        """Test registering a plugin."""
+        """Registering plugin with explicit name succeeds."""
         plugin = SamplePlugin()
         name = fresh_plugin_manager.register(plugin, name="test_plugin")
         assert name == "test_plugin"
@@ -108,26 +190,23 @@ class TestPluginManagerRegistration:
     def test_register_plugin_without_name(
         self, fresh_plugin_manager: PluginManager
     ) -> None:
-        """Test registering a plugin without explicit name."""
-        plugin = SamplePlugin()
-        name = fresh_plugin_manager.register(plugin)
+        """Registering plugin without explicit name returns generated name."""
+        name = fresh_plugin_manager.register(SamplePlugin())
         assert name is not None
 
     def test_is_registered(self, fresh_plugin_manager: PluginManager) -> None:
-        """Test checking if plugin is registered."""
+        """is_registered reflects plugin registration status."""
         plugin = SamplePlugin()
         assert not fresh_plugin_manager.is_registered(plugin)
-
         fresh_plugin_manager.register(plugin)
         assert fresh_plugin_manager.is_registered(plugin)
 
     def test_unregister_plugin(
         self, fresh_plugin_manager: PluginManager
     ) -> None:
-        """Test unregistering a plugin."""
+        """Unregistering by name removes plugin."""
         plugin = SamplePlugin()
         fresh_plugin_manager.register(plugin, name="test_plugin")
-
         unregistered = fresh_plugin_manager.unregister(name="test_plugin")
         assert unregistered is plugin
         assert not fresh_plugin_manager.is_registered(plugin)
@@ -135,113 +214,98 @@ class TestPluginManagerRegistration:
     def test_unregister_by_instance(
         self, fresh_plugin_manager: PluginManager
     ) -> None:
-        """Test unregistering by plugin instance."""
+        """Unregistering by plugin instance removes plugin."""
         plugin = SamplePlugin()
         fresh_plugin_manager.register(plugin)
-
         unregistered = fresh_plugin_manager.unregister(plugin=plugin)
         assert unregistered is plugin
 
 
-class TestPluginManagerPluginListing:
-    """Tests for plugin listing methods."""
-
-    def test_get_plugins(self, fresh_plugin_manager: PluginManager) -> None:
-        """Test getting list of plugins."""
-        plugin1 = SamplePlugin()
-        plugin2 = EmptyPlugin()
-
-        fresh_plugin_manager.register(plugin1, name="plugin1")
-        fresh_plugin_manager.register(plugin2, name="plugin2")
-
-        plugins = fresh_plugin_manager.get_plugins()
-        assert plugin1 in plugins
-        assert plugin2 in plugins
-
-    def test_get_plugin_names(
-        self, fresh_plugin_manager: PluginManager
-    ) -> None:
-        """Test getting list of plugin names."""
-        fresh_plugin_manager.register(SamplePlugin(), name="test_plugin")
-        fresh_plugin_manager.register(EmptyPlugin(), name="empty_plugin")
-
-        names = fresh_plugin_manager.get_plugin_names()
-        assert "test_plugin" in names
-        assert "empty_plugin" in names
-
-
-class TestPluginManagerHooks:
-    """Tests for hook invocation."""
-
-    def test_hook_property(self, fresh_plugin_manager: PluginManager) -> None:
-        """Test accessing hook relay."""
-        hook = fresh_plugin_manager.hook
-        assert hook is not None
-        assert hasattr(hook, "limbo_register_connections")
+class TestPluginManagerLoadPlugins:
+    """Tests for plugin load flow and registry updates."""
 
     def test_register_connections_hook(
-        self, fresh_plugin_manager: PluginManager
+        self,
+        fresh_plugin_manager: PluginManager,
+        connection_registry: ConnectionRegistry,
     ) -> None:
-        """Test that connection hook is called during load_plugins."""
-        ConnectionRegistry.clear()
+        """Connection hooks register connection classes into registry."""
         fresh_plugin_manager.register(SamplePlugin(), name="test")
         fresh_plugin_manager.load_plugins()
-
-        types = ConnectionRegistry.get_types()
+        types = connection_registry.get_types()
         assert "test_plugin_conn" in types
 
     def test_empty_plugin_hook_result(
-        self, fresh_plugin_manager: PluginManager
+        self,
+        fresh_plugin_manager: PluginManager,
+        connection_registry: ConnectionRegistry,
     ) -> None:
-        """Test plugin returning empty list."""
-        ConnectionRegistry.clear()
+        """Empty hook results are handled without side effects."""
         fresh_plugin_manager.register(EmptyPlugin(), name="empty")
         fresh_plugin_manager.load_plugins()
-
-        # Should not crash, just no connections added
-        assert ConnectionRegistry.get_types() == {}
-
-
-class TestPluginManagerLoadPlugins:
-    """Tests for load_plugins method."""
+        assert set(connection_registry.get_types()) == {"sqlalchemy"}
 
     def test_load_plugins_only_once(
-        self, fresh_plugin_manager: PluginManager
+        self,
+        fresh_plugin_manager: PluginManager,
+        connection_registry: ConnectionRegistry,
     ) -> None:
-        """Test that load_plugins only runs once."""
-        ConnectionRegistry.clear()
+        """load_plugins is idempotent for one manager instance."""
         fresh_plugin_manager.register(SamplePlugin(), name="test")
-
         fresh_plugin_manager.load_plugins()
-        assert "test_plugin_conn" in ConnectionRegistry.get_types()
+        assert "test_plugin_conn" in connection_registry.get_types()
 
-        # Modify registry to detect if load_plugins runs again
-        ConnectionRegistry.clear()
+        connection_registry.clear_types()
         fresh_plugin_manager.load_plugins()
-
-        # Registry should still be empty because load_plugins didn't run again
-        assert ConnectionRegistry.get_types() == {}
+        assert connection_registry.get_types() == {}
 
     def test_load_plugins_marks_loaded(
         self, fresh_plugin_manager: PluginManager
     ) -> None:
-        """Test that _plugins_loaded is set after loading."""
+        """Manager tracks that plugins were loaded."""
         assert not fresh_plugin_manager._plugins_loaded
         fresh_plugin_manager.load_plugins()
         assert fresh_plugin_manager._plugins_loaded
 
+    def test_register_value_readers_hook(self) -> None:
+        """Value-reader hook populates the value reader registry."""
+        value_reader_registry = ValueReaderRegistry()
+        manager = PluginManager(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=value_reader_registry,
+            path_backend_registry=PathBackendRegistry(),
+        )
+        manager.register(ReaderPlugin(), name="reader_plugin")
+        manager.load_plugins()
+        assert "static" in value_reader_registry.get_types()
+        assert "env" in value_reader_registry.get_types()
+
+    def test_register_path_backends_hook(self) -> None:
+        """Path-backend hook populates path backend registry."""
+        path_backend_registry = PathBackendRegistry()
+        manager = PluginManager(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            path_backend_registry=path_backend_registry,
+        )
+        manager.register(PathPlugin(), name="path_plugin")
+        manager.load_plugins()
+        resolved = path_backend_registry.resolve({
+            "path_from": {"backend": "mock", "location": "mock://x"}
+        })
+        assert resolved.backend == "mock"
+
 
 class TestNoImportSideEffects:
-    """Tests that package imports do not trigger plugin loading."""
+    """Tests for import-time behavior."""
 
-    def test_importing_connections_does_not_load_plugins(self) -> None:
-        """Importing connections must not register plugin connection types."""
+    def test_importing_connection_adapters_does_not_load_plugins(self) -> None:
+        """Importing adapters must not auto-register plugin connections."""
         script = """
 import sys
 sys.path.insert(0, {src!r})
-import limbo_core.connections
-from limbo_core.connections import ConnectionRegistry
-types = ConnectionRegistry.get_types()
+from limbo_core.adapters.connections import ConnectionRegistry
+types = ConnectionRegistry().get_types()
 sys.exit(0 if "sqlalchemy" not in types else 1)
 """
         src = Path(__file__).resolve().parent.parent.parent / "src"
@@ -252,5 +316,6 @@ sys.exit(0 if "sqlalchemy" not in types else 1)
             timeout=10,
         )
         assert proc.returncode == 0, (
-            f"connections import must not load plugins; stderr: {proc.stderr}"
+            "connection adapters import must not load plugins; "
+            f"stderr: {proc.stderr}"
         )

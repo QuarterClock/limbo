@@ -1,6 +1,11 @@
-class ContextMissingError(Exception):
-    """Exception raised when a context is missing."""
+"""Top-level limbo_core error hierarchy."""
 
-    def __init__(self) -> None:
-        """Initialize the ContextMissingError."""
-        super().__init__("Context is missing")
+from limbo_core.domain.errors import DomainError, DomainValidationError
+
+
+class LimboError(DomainError):
+    """Base exception for all limbo_core errors."""
+
+
+class LimboValidationError(LimboError, DomainValidationError):
+    """Base exception for validation-related limbo_core errors."""
