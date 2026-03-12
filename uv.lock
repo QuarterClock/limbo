@@ -461,6 +461,9 @@ sqlalchemy = [
 ]
 
 [package.dev-dependencies]
+codespell = [
+    { name = "codespell" },
+]
 dev = [
     { name = "codespell" },
     { name = "mkdocs" },
@@ -480,9 +483,10 @@ docs = [
     { name = "mkdocstrings", extra = ["python"] },
 ]
 linting = [
-    { name = "codespell" },
     { name = "pyproject-fmt" },
     { name = "ruff" },
+]
+markdown = [
     { name = "rumdl" },
 ]
 tests = [
@@ -501,6 +505,7 @@ requires-dist = [
 provides-extras = ["sqlalchemy"]
 
 [package.metadata.requires-dev]
+codespell = [{ name = "codespell", specifier = "==2.4.2" }]
 dev = [
     { name = "codespell", specifier = "==2.4.2" },
     { name = "mkdocs", specifier = "==1.6.1" },
@@ -520,11 +525,10 @@ docs = [
     { name = "mkdocstrings", extras = ["python"], specifier = "==1.0.3" },
 ]
 linting = [
-    { name = "codespell", specifier = "==2.4.2" },
     { name = "pyproject-fmt", specifier = "==2.18.1" },
     { name = "ruff", specifier = "==0.15.5" },
-    { name = "rumdl", specifier = "==0.1.46" },
 ]
+markdown = [{ name = "rumdl", specifier = "==0.1.46" }]
 tests = [
     { name = "pytest", specifier = "==9.0.2" },
     { name = "pytest-cov", specifier = "==7.0.0" },
