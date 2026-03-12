@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from limbo_core.validation import require_mapping
 
 if TYPE_CHECKING:
-    from limbo_core.application.context import RuntimeContext
+    from limbo_core.application.context import ResolutionContext, RuntimeContext
     from limbo_core.application.interfaces import PluginLoader
     from limbo_core.application.parsers import ProjectParser
     from limbo_core.application.services.project_validator import (
@@ -30,6 +30,7 @@ class ProjectLoaderService:
         raw_project: dict[str, Any],
         *,
         context: RuntimeContext | None = None,
+        resolution_context: ResolutionContext | None = None,
     ) -> Project:
         """Load plugins and validate project payload.
 
@@ -41,5 +42,6 @@ class ProjectLoaderService:
         project = self.parser.parse(payload)
         if context is None:
             return project
-        context.connections = self.parser.connection_registry.get_instances()
-        return self.validator.validate(project, context=context)
+        return self.validator.validate(
+            project, context=context, resolution_context=resolution_context
+        )

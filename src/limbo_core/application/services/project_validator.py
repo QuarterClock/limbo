@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from limbo_core.application.context import ConnectionNotFoundError
 from limbo_core.domain.errors import DomainValidationError
 
 if TYPE_CHECKING:
-    from limbo_core.application.context import RuntimeContext
-    from limbo_core.application.interfaces import PathResolverPort
+    from limbo_core.application.context import ResolutionContext, RuntimeContext
+    from limbo_core.application.interfaces import (
+        ConnectionRegistryPort,
+        PathResolverPort,
+    )
     from limbo_core.domain.entities import Project
 
 
@@ -35,8 +37,15 @@ class ProjectValidatorService:
     """Validate project references that require runtime context."""
 
     path_registry: PathResolverPort
+    connection_registry: ConnectionRegistryPort
 
-    def validate(self, project: Project, *, context: RuntimeContext) -> Project:
+    def validate(
+        self,
+        project: Project,
+        *,
+        context: RuntimeContext,
+        resolution_context: ResolutionContext | None = None,
+    ) -> Project:
         """Validate generators, connections, and seed paths.
 
         Returns:
@@ -51,13 +60,14 @@ class ProjectValidatorService:
                 if column.generator not in context.generators:
                     raise GeneratorNotFoundError(column.generator)
 
+        configured_connections = self.connection_registry.get_instances()
         for source in project.sources:
-            try:
-                context.get_connection(source.config.connection)
-            except ConnectionNotFoundError as err:
-                raise UnknownSourceConnectionError(err.connection_name) from err
+            if source.config.connection not in configured_connections:
+                raise UnknownSourceConnectionError(source.config.connection)
 
         for seed in project.seeds:
-            self.path_registry.resolve(seed.seed_file.path, paths=context.paths)
+            self.path_registry.resolve(
+                seed.seed_file.path, context=resolution_context
+            )
 
         return project

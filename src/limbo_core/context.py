@@ -1,9 +1,6 @@
 """Backward-compatible re-exports from ``application.context``."""
 
-from limbo_core.application.context import (
-    ParsingContext,
-    ReferenceResolver,
-    RuntimeContext,
-)
+from limbo_core.application.context import ResolutionContext, RuntimeContext
+from limbo_core.application.interfaces import ReferenceResolver
 
-__all__ = ["ParsingContext", "ReferenceResolver", "RuntimeContext"]
+__all__ = ["ReferenceResolver", "ResolutionContext", "RuntimeContext"]

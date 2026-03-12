@@ -122,16 +122,16 @@ class BaseRegistry(BaseRegistryPort[BackendT, SpecT], Generic[BackendT, SpecT]):
         return normalized
 
     def _normalize_name(self, name: str) -> str:
-        """Normalize configured backend alias name.
+        """Validate and strip whitespace from a backend instance name.
 
         Returns:
-            Normalized non-empty backend alias.
+            Stripped non-empty backend alias (preserves original casing).
 
         Raises:
-            ValidationError: If the normalized name is empty.
+            ValidationError: If the stripped name is empty.
         """
-        normalized = name.strip().lower()
-        if not normalized:
+        stripped = name.strip()
+        if not stripped:
             label = self._backend_label[0].upper() + self._backend_label[1:]
             raise ValidationError(f"{label} name cannot be empty")
-        return normalized
+        return stripped

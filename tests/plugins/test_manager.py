@@ -77,7 +77,7 @@ class _StaticReader(ValueReaderBackend):
 
 class _MockPathBackend(PathBackend):
     def resolve(
-        self, path_spec: object, *, paths: dict[str, object]
+        self, path_spec: object, *, base: object | None = None
     ) -> ResolvedResource:
         return ResolvedResource(backend="mock", uri="mock://resource")
 
@@ -290,9 +290,9 @@ class TestPluginManagerLoadPlugins:
         )
         manager.register(PathPlugin(), name="path_plugin")
         manager.load_plugins()
-        resolved = path_backend_registry.resolve(
-            {"path_from": {"backend": "mock", "location": "mock://x"}}, paths={}
-        )
+        resolved = path_backend_registry.resolve({
+            "path_from": {"backend": "mock", "location": "mock://x"}
+        })
         assert resolved.backend == "mock"
 
 

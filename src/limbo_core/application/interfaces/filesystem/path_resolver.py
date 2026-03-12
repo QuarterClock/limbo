@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from limbo_core.application.context import ResolutionContext
     from limbo_core.domain.entities import ResolvedResource
 
 
@@ -18,6 +19,6 @@ class PathResolverPort(ABC):
 
     @abstractmethod
     def resolve(
-        self, raw_path: Any, *, paths: dict[str, Any]
+        self, raw_path: Any, *, context: ResolutionContext | None = None
     ) -> ResolvedResource:
         """Resolve and validate a resource path expression."""

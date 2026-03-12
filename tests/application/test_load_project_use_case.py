@@ -8,6 +8,7 @@ from limbo_core.adapters.connections import ConnectionRegistry
 from limbo_core.adapters.filesystem import PathBackendRegistry
 from limbo_core.adapters.plugins import PluggyPluginLoader
 from limbo_core.adapters.value_reader import ValueReaderRegistry
+from limbo_core.application.context import ResolutionContext, RuntimeContext
 from limbo_core.application.parsers import ProjectParser
 from limbo_core.application.services import (
     ProjectLoaderService,
@@ -17,8 +18,6 @@ from limbo_core.application.services.project_validator import (
     GeneratorNotFoundError,
     UnknownSourceConnectionError,
 )
-from limbo_core.context import RuntimeContext
-from limbo_core.domain.entities import ConnectionBackendSpec
 from limbo_core.plugins import PluginManager
 from limbo_core.plugins.builtin.connections import SQLAlchemyConnectionBackend
 
@@ -76,41 +75,40 @@ def _base_payload(generator_name: str = "gen.ok") -> dict[str, object]:
     }
 
 
-def _runtime_connection() -> SQLAlchemyConnectionBackend:
-    return SQLAlchemyConnectionBackend.from_spec(
-        ConnectionBackendSpec(
-            name="main_db",
-            type="sqlalchemy",
-            config={
-                "host": "",
-                "user": "",
-                "password": "",
-                "database": ":memory:",
-            },
-        )
-    )
+@pytest.fixture
+def connection_registry() -> ConnectionRegistry:
+    """Create a shared connection registry for loader and validator."""
+    return ConnectionRegistry()
 
 
 @pytest.fixture
-def loader() -> ProjectLoaderService:
+def path_registry() -> PathBackendRegistry:
+    """Create a shared path registry for loader and validator."""
+    return PathBackendRegistry()
+
+
+@pytest.fixture
+def loader(
+    connection_registry: ConnectionRegistry, path_registry: PathBackendRegistry
+) -> ProjectLoaderService:
     """Create project loader service with default plugin loader."""
-    registry = ConnectionRegistry()
     value_reader_registry = ValueReaderRegistry()
-    path_registry = PathBackendRegistry()
     return ProjectLoaderService(
         plugin_loader=PluggyPluginLoader(
             manager=PluginManager(
-                connection_registry=registry,
+                connection_registry=connection_registry,
                 value_reader_registry=value_reader_registry,
                 path_backend_registry=path_registry,
             )
         ),
         parser=ProjectParser(
-            connection_registry=registry,
+            connection_registry=connection_registry,
             value_reader_registry=value_reader_registry,
             path_backend_registry=path_registry,
         ),
-        validator=ProjectValidatorService(path_registry=path_registry),
+        validator=ProjectValidatorService(
+            path_registry=path_registry, connection_registry=connection_registry
+        ),
     )
 
 
@@ -122,43 +120,44 @@ class TestLoadProjectWithContext:
     ) -> None:
         """Load validates seed file paths against runtime context."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
-        context = RuntimeContext(
-            generators={"gen.ok"},
-            paths={"this": tmp_path},
-            connections={"main_db": _runtime_connection()},
+        context = RuntimeContext(generators={"gen.ok"})
+        res_ctx = ResolutionContext(source_dir=tmp_path)
+        project = loader.load(
+            _base_payload(), context=context, resolution_context=res_ctx
         )
-        project = loader.load(_base_payload(), context=context)
         assert project.seeds[0].name == "sex"
         assert project.seeds[0].seed_file.path.backend == "file"
 
-    def test_materializes_connection_instances_into_context(
-        self, loader: ProjectLoaderService, tmp_path
+    def test_configures_connection_instances_in_registry(
+        self,
+        loader: ProjectLoaderService,
+        connection_registry: ConnectionRegistry,
+        tmp_path,
     ) -> None:
-        """Parsed project connections become runtime context source of truth."""
+        """Parsed project connections are configured in the registry."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
-        context = RuntimeContext(
-            generators={"gen.ok"}, paths={"this": tmp_path}, connections={}
+        context = RuntimeContext(generators={"gen.ok"})
+        res_ctx = ResolutionContext(source_dir=tmp_path)
+
+        loader.load(
+            _base_payload(), context=context, resolution_context=res_ctx
         )
 
-        loader.load(_base_payload(), context=context)
-
-        assert "main_db" in context.connections
-        assert isinstance(
-            context.connections["main_db"], SQLAlchemyConnectionBackend
-        )
+        instances = connection_registry.get_instances()
+        assert "main_db" in instances
+        assert isinstance(instances["main_db"], SQLAlchemyConnectionBackend)
 
     def test_missing_generator_raises(
         self, loader: ProjectLoaderService, tmp_path
     ) -> None:
         """Raise if a table references an unknown generator."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
-        context = RuntimeContext(
-            generators=set(),
-            paths={"this": tmp_path},
-            connections={"main_db": _runtime_connection()},
-        )
+        context = RuntimeContext(generators=set())
+        res_ctx = ResolutionContext(source_dir=tmp_path)
         with pytest.raises(GeneratorNotFoundError):
-            loader.load(_base_payload(), context=context)
+            loader.load(
+                _base_payload(), context=context, resolution_context=res_ctx
+            )
 
     def test_missing_source_connection_raises(
         self, loader: ProjectLoaderService, tmp_path
@@ -173,11 +172,10 @@ class TestLoadProjectWithContext:
                 "config": {"connection": "missing"},
             }
         ]
-        context = RuntimeContext(
-            generators={"gen.ok"}, paths={"this": tmp_path}, connections={}
-        )
+        context = RuntimeContext(generators={"gen.ok"})
+        res_ctx = ResolutionContext(source_dir=tmp_path)
         with pytest.raises(UnknownSourceConnectionError):
-            loader.load(payload, context=context)
+            loader.load(payload, context=context, resolution_context=res_ctx)
 
 
 class TestLoadProjectWithoutContext:
@@ -228,12 +226,11 @@ class TestLoadProjectWithoutContext:
                 "location": "seed.csv",
             }
         }
-        context = RuntimeContext(
-            generators={"gen.ok"},
-            paths={"this": tmp_path},
-            connections={"main_db": _runtime_connection()},
-        )
+        context = RuntimeContext(generators={"gen.ok"})
+        res_ctx = ResolutionContext(source_dir=tmp_path)
 
-        project = loader.load(payload, context=context)
+        project = loader.load(
+            payload, context=context, resolution_context=res_ctx
+        )
         assert project.connections[0].config["host"] == "bound.example.com"
         assert project.seeds[0].seed_file.path.backend == "localfs"

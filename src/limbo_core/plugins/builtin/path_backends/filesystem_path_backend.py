@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 from limbo_core.application.interfaces import PathBackend
-from limbo_core.application.parsers.common import InvalidPathSpecError
 from limbo_core.domain.entities import PathSpec, ResolvedResource
 
 
@@ -18,7 +17,7 @@ class FilesystemPathBackend(PathBackend):
     cwd: Path = field(default_factory=Path.cwd)
 
     def resolve(
-        self, path_spec: PathSpec, *, paths: dict[str, Any]
+        self, path_spec: PathSpec, *, base: Any | None = None
     ) -> ResolvedResource:
         """Resolve one local filesystem path spec.
 
@@ -36,7 +35,7 @@ class FilesystemPathBackend(PathBackend):
                 local_path=raw_path,
             )
 
-        base_path = self._resolve_base_path(path_spec.base, paths=paths)
+        base_path = Path(base) if base is not None else self.cwd
         resolved = base_path / raw_path
         if not resolved.exists():
             raise FileNotFoundError(f"Path {resolved} does not exist")
@@ -44,30 +43,3 @@ class FilesystemPathBackend(PathBackend):
         return ResolvedResource(
             backend=path_spec.backend, uri=str(resolved), local_path=resolved
         )
-
-    def _resolve_base_path(
-        self, base: str | None, *, paths: dict[str, Any]
-    ) -> Path:
-        """Resolve optional base alias from runtime context paths.
-
-        Returns:
-            Base path to use for local relative path resolution.
-
-        Raises:
-            InvalidPathSpecError: If base alias is empty or unknown.
-        """
-        if base is None:
-            return self.cwd
-
-        parts = base.split(".")
-        if not parts or not parts[0]:
-            raise InvalidPathSpecError("`path_from.base` cannot be empty")
-        if parts[0] not in paths:
-            raise InvalidPathSpecError(
-                f"`path_from.base` unknown key: {parts[0]}"
-            )
-
-        value: Any = paths[parts[0]]
-        for part in parts[1:]:
-            value = getattr(value, part)
-        return Path(value)

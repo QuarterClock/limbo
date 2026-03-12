@@ -13,9 +13,9 @@ from limbo_core.adapters.value_reader.errors import (
     LookupValueNotFoundError,
     UnknownValueReaderError,
 )
+from limbo_core.application.context import ResolutionContext
 from limbo_core.application.interfaces import PathBackend, ValueReaderBackend
 from limbo_core.application.parsers.common import InvalidPathSpecError
-from limbo_core.context import ParsingContext
 from limbo_core.domain.entities import (
     LookupValue,
     PathBackendSpec,
@@ -37,13 +37,13 @@ class _StaticReader(ValueReaderBackend):
 
 class _SpyBackend(PathBackend):
     last_path_spec: PathSpec | None = None
-    last_paths: dict[str, object] | None = None
+    last_base: object | None = None
 
     def resolve(
-        self, path_spec: PathSpec, *, paths: dict[str, object]
+        self, path_spec: PathSpec, *, base: object | None = None
     ) -> ResolvedResource:
         type(self).last_path_spec = path_spec
-        type(self).last_paths = paths
+        type(self).last_base = base
         return ResolvedResource(backend="spy", uri="spy://resource")
 
 
@@ -167,7 +167,7 @@ class TestPathBackendRegistryResolve:
     ) -> None:
         """Registry resolves local specs relative to configured root alias."""
         (tmp_path / "data.csv").write_text("id\n1\n")
-        context = ParsingContext(paths={"this": tmp_path})
+        ctx = ResolutionContext(source_dir=tmp_path)
         spec = {
             "path_from": {
                 "backend": "file",
@@ -175,7 +175,7 @@ class TestPathBackendRegistryResolve:
                 "location": "data.csv",
             }
         }
-        resolved = file_registry.resolve(spec, paths=context.paths)
+        resolved = file_registry.resolve(spec, context=ctx)
         assert resolved.backend == "file"
         assert resolved.local_path == tmp_path / "data.csv"
 
@@ -188,7 +188,7 @@ class TestPathBackendRegistryResolve:
         """Registry validates existence for plain local-path shorthand."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / "seed.csv").write_text("id\n1\n")
-        resolved = file_registry.resolve("seed.csv", paths={})
+        resolved = file_registry.resolve("seed.csv")
         assert resolved.local_path is not None
         assert resolved.local_path.name == "seed.csv"
 
@@ -196,30 +196,26 @@ class TestPathBackendRegistryResolve:
         """Path registry dispatches structured backend specs correctly."""
         registry = PathBackendRegistry()
         registry.register("s3", _SpyBackend)
-        resolved = registry.resolve(
-            {"path_from": {"backend": "s3", "location": "s3://bucket/key.csv"}},
-            paths={"scope": "any"},
-        )
+        resolved = registry.resolve({
+            "path_from": {"backend": "s3", "location": "s3://bucket/key.csv"}
+        })
         assert resolved.backend == "spy"
         assert _SpyBackend.last_path_spec == PathSpec(
             backend="s3", location="s3://bucket/key.csv"
         )
-        assert _SpyBackend.last_paths == {"scope": "any"}
+        assert _SpyBackend.last_base is None
 
     def test_uses_named_backend_binding(self) -> None:
         """Path registry dispatches through configured backend aliases."""
         registry = PathBackendRegistry()
         registry.register("s3", _SpyBackend)
         registry.configure(PathBackendSpec(name="archive", type="s3"))
-        resolved = registry.resolve(
-            {
-                "path_from": {
-                    "backend": "archive",
-                    "location": "s3://bucket/key.csv",
-                }
-            },
-            paths={"scope": "any"},
-        )
+        resolved = registry.resolve({
+            "path_from": {
+                "backend": "archive",
+                "location": "s3://bucket/key.csv",
+            }
+        })
         assert resolved.backend == "spy"
         assert _SpyBackend.last_path_spec == PathSpec(
             backend="archive", location="s3://bucket/key.csv"
@@ -229,20 +225,57 @@ class TestPathBackendRegistryResolve:
         """Resolve uses type registry when no named instance exists."""
         registry = PathBackendRegistry()
         registry.register("s3", _SpyBackend)
-        # No configure() — only a type is registered, no named instance.
-        resolved = registry.resolve(
-            {
-                "path_from": {
-                    "backend": "s3",
-                    "location": "s3://bucket/fallback.csv",
-                }
-            },
-            paths={},
-        )
+        resolved = registry.resolve({
+            "path_from": {
+                "backend": "s3",
+                "location": "s3://bucket/fallback.csv",
+            }
+        })
         assert resolved.backend == "spy"
         assert _SpyBackend.last_path_spec == PathSpec(
             backend="s3", location="s3://bucket/fallback.csv"
         )
+
+    def test_resolves_base_alias_before_dispatch(self) -> None:
+        """Registry resolves the base alias and passes it to the backend."""
+        registry = PathBackendRegistry()
+        registry.register("s3", _SpyBackend)
+        ctx = ResolutionContext(extra_aliases={"bucket": "my-project-bucket"})
+        registry.resolve(
+            {
+                "path_from": {
+                    "backend": "s3",
+                    "base": "bucket",
+                    "location": "data/key.csv",
+                }
+            },
+            context=ctx,
+        )
+        assert _SpyBackend.last_base == "my-project-bucket"
+
+    def test_resolves_dotted_base_alias(self, tmp_path: Path) -> None:
+        """Registry traverses dotted aliases before dispatch."""
+
+        class _AliasRoot:
+            def __init__(self, parent: Path) -> None:
+                self.parent = parent
+
+        registry = PathBackendRegistry()
+        registry.register("s3", _SpyBackend)
+        ctx = ResolutionContext(
+            extra_aliases={"root": _AliasRoot(parent=tmp_path)}
+        )
+        registry.resolve(
+            {
+                "path_from": {
+                    "backend": "s3",
+                    "base": "root.parent",
+                    "location": "key.csv",
+                }
+            },
+            context=ctx,
+        )
+        assert _SpyBackend.last_base == tmp_path
 
     def test_create_many_from_specs(self) -> None:
         """create_many instantiates backends from a list of PathBackendSpec."""
@@ -281,7 +314,7 @@ class TestPathBackendRegistryErrors:
     ) -> None:
         """Registry raises explicit domain errors for malformed inputs."""
         with pytest.raises(InvalidPathSpecError):
-            file_registry.resolve(123, paths={})  # type: ignore[arg-type]
+            file_registry.resolve(123)  # type: ignore[arg-type]
 
     def test_absolute_path_passes_through(
         self, file_registry: PathBackendRegistry, tmp_path: Path
@@ -293,22 +326,19 @@ class TestPathBackendRegistryErrors:
                 "location": str(tmp_path / "abs.csv"),
             }
         }
-        resolved = file_registry.resolve(spec, paths={})
+        resolved = file_registry.resolve(spec)
         assert resolved.local_path == tmp_path / "abs.csv"
 
     def test_unknown_backend_raises(self) -> None:
         """Path registry rejects specs for unregistered backends."""
         registry = PathBackendRegistry()
         with pytest.raises(UnknownPathBackendError, match="s3"):
-            registry.resolve(
-                {
-                    "path_from": {
-                        "backend": "s3",
-                        "location": "s3://bucket/key.csv",
-                    }
-                },
-                paths={},
-            )
+            registry.resolve({
+                "path_from": {
+                    "backend": "s3",
+                    "location": "s3://bucket/key.csv",
+                }
+            })
 
 
 # ---------------------------------------------------------------------------
@@ -329,9 +359,7 @@ class TestFilesystemPathBackend:
     ) -> None:
         """Filesystem backend operates on generic path specs."""
         with pytest.raises(FileNotFoundError, match="does not exist"):
-            backend.resolve(
-                PathSpec(backend="s3", location="missing.csv"), paths={}
-            )
+            backend.resolve(PathSpec(backend="s3", location="missing.csv"))
 
     def test_missing_relative_path_raises(
         self,
@@ -342,33 +370,24 @@ class TestFilesystemPathBackend:
         """Filesystem backend raises when relative target does not exist."""
         monkeypatch.chdir(tmp_path)
         with pytest.raises(FileNotFoundError, match="does not exist"):
-            backend.resolve(
-                PathSpec(backend="file", location="missing.csv"), paths={}
-            )
+            backend.resolve(PathSpec(backend="file", location="missing.csv"))
 
-    def test_resolves_local_root_without_path(
+    def test_resolves_with_base_path(
         self, backend: FilesystemPathBackend, tmp_path: Path
     ) -> None:
-        """Local path specs can resolve root aliases with empty path."""
+        """Backend resolves relative paths against a pre-resolved base."""
         resolved = backend.resolve(
-            PathSpec(backend="file", location="", base="this"),
-            paths={"this": tmp_path},
+            PathSpec(backend="file", location=""), base=tmp_path
         )
         assert resolved.backend == "file"
         assert resolved.local_path == tmp_path
 
-    def test_resolves_nested_alias_path(
+    def test_resolves_relative_against_base(
         self, backend: FilesystemPathBackend, tmp_path: Path
     ) -> None:
-        """Filesystem backend supports dotted alias lookup paths."""
-
-        class _AliasRoot:
-            def __init__(self, parent: Path) -> None:
-                self.parent = parent
-
+        """Backend joins location with pre-resolved base path."""
         (tmp_path / "data.csv").write_text("id\n1\n")
         resolved = backend.resolve(
-            PathSpec(backend="file", location="data.csv", base="this.parent"),
-            paths={"this": _AliasRoot(parent=tmp_path)},
+            PathSpec(backend="file", location="data.csv"), base=tmp_path
         )
         assert resolved.local_path == tmp_path / "data.csv"

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from limbo_core.adapters.base_registry import BaseRegistry
-from limbo_core.application.context import ConnectionNotFoundError
+from limbo_core.application.context.errors import ConnectionNotFoundError
 from limbo_core.application.interfaces import (
     ConnectionBackend,
     ConnectionRegistryPort,

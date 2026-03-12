@@ -9,6 +9,7 @@ from .connections import (
 )
 from .filesystem import PathBackend, PathBackendRegistryPort, PathResolverPort
 from .plugin_loader import PluginLoader
+from .reference_resolver import ReferenceResolver
 from .value_reader import (
     ValueReaderBackend,
     ValueReaderRegistryPort,
@@ -25,6 +26,7 @@ __all__ = [
     "PathBackendRegistryPort",
     "PathResolverPort",
     "PluginLoader",
+    "ReferenceResolver",
     "ValueReaderBackend",
     "ValueReaderRegistryPort",
     "ValueResolverPort",

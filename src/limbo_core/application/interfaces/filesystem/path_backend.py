@@ -14,6 +14,13 @@ class PathBackend(ABC):
 
     @abstractmethod
     def resolve(
-        self, path_spec: PathSpec, *, paths: dict[str, Any]
+        self, path_spec: PathSpec, *, base: Any | None = None
     ) -> ResolvedResource:
-        """Resolve one structured path spec to a backend-agnostic resource."""
+        """Resolve one structured path spec to a backend-agnostic resource.
+
+        Args:
+            path_spec: Parsed path specification.
+            base: Pre-resolved base value for relative path resolution.
+                  The registry resolves the ``PathSpec.base`` alias before
+                  calling this method; backends receive the concrete value.
+        """

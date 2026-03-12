@@ -264,13 +264,13 @@ class TestConnectionRegistryConnect:
         with pytest.raises(ConnectionNotFoundError, match="missing_db"):
             registry.connect("missing_db")
 
-    def test_connect_normalizes_name(
+    def test_connect_strips_whitespace(
         self, registry: ConnectionRegistryPort
     ) -> None:
-        """connect() normalizes name for case-insensitive lookup."""
+        """connect() strips whitespace but preserves original casing."""
         registry.register("mock", MockConnectionBackend)
         registry.configure(
             ConnectionBackendSpec(name="Main", type="mock", config={})
         )
-        result = registry.connect(" main ")
+        result = registry.connect(" Main ")
         assert result == "connected"

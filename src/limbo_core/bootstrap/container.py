@@ -17,7 +17,7 @@ from limbo_core.application.services import (
 from limbo_core.plugins import PluginManager
 
 if TYPE_CHECKING:
-    from limbo_core.application.context import RuntimeContext
+    from limbo_core.application.context import ResolutionContext, RuntimeContext
     from limbo_core.domain.entities import Project
 
 
@@ -54,7 +54,8 @@ class Container:
             path_backend_registry=self.path_registry,
         )
         self.project_validator_service = ProjectValidatorService(
-            path_registry=self.path_registry
+            path_registry=self.path_registry,
+            connection_registry=self.connection_registry,
         )
         self.project_loader_service = ProjectLoaderService(
             plugin_loader=self.plugin_loader,
@@ -63,14 +64,20 @@ class Container:
         )
 
     def load_project(
-        self, payload: dict[str, Any], *, context: RuntimeContext | None = None
+        self,
+        payload: dict[str, Any],
+        *,
+        context: RuntimeContext | None = None,
+        resolution_context: ResolutionContext | None = None,
     ) -> Project:
         """Load and validate a project using wired dependencies.
 
         Returns:
             Parsed and runtime-validated project model.
         """
-        return self.project_loader_service.load(payload, context=context)
+        return self.project_loader_service.load(
+            payload, context=context, resolution_context=resolution_context
+        )
 
 
 _default_container: Container | None = None
