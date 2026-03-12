@@ -38,7 +38,7 @@ def parse_path_spec(raw: Any) -> PathSpec:
     backend = source.get("backend")
     if not isinstance(backend, str):
         raise InvalidPathSpecError("`path_from.backend` expects a string")
-    normalized_backend = backend.strip().lower()
+    normalized_backend = backend.strip()
     if not normalized_backend:
         raise InvalidPathSpecError("`path_from.backend` cannot be empty")
 
