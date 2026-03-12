@@ -1,3 +1,5 @@
+"""Seed domain entities."""
+
 from .column import SeedColumn
 from .config import SeedConfig
 from .file import SeedFile

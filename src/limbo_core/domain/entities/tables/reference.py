@@ -1,3 +1,5 @@
+"""Table reference and relationship entities."""
+
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal

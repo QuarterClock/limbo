@@ -1,3 +1,5 @@
+"""Domain data type enumeration."""
+
 from enum import StrEnum
 
 

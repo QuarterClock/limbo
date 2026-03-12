@@ -1,3 +1,5 @@
+"""Base artifact column entity."""
+
 from dataclasses import dataclass
 
 from .data_types import DataType

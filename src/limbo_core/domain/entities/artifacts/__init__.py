@@ -1,3 +1,5 @@
+"""Artifact domain entities."""
+
 from .artifact import Artifact
 from .column import ArtifactColumn
 from .config import ArtifactConfig

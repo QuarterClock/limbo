@@ -1,3 +1,5 @@
+"""Project aggregate root entity."""
+
 from dataclasses import dataclass, field
 
 from .backends import (

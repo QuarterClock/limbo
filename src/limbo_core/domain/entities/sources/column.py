@@ -1,3 +1,5 @@
+"""Source column entity."""
+
 from limbo_core.domain.entities.artifacts.column import ArtifactColumn
 
 

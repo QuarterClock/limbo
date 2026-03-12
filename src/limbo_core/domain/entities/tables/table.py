@@ -1,3 +1,5 @@
+"""Table artifact entity."""
+
 from dataclasses import dataclass
 
 from limbo_core.domain.entities.artifacts.artifact import Artifact

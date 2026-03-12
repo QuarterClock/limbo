@@ -1,3 +1,5 @@
+"""Base artifact entity."""
+
 from abc import ABC
 from dataclasses import dataclass
 from typing import Generic, TypeVar

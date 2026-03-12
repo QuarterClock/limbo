@@ -1,3 +1,5 @@
+"""Base artifact configuration entity."""
+
 from dataclasses import dataclass
 
 

@@ -1,3 +1,5 @@
+"""Table column entity with generator options."""
+
 from dataclasses import dataclass
 
 from limbo_core.domain.entities.artifacts.column import ArtifactColumn
