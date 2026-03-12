@@ -7,7 +7,21 @@ from .connections import (
     ConnectionProviderPort,
     ConnectionRegistryPort,
 )
-from .filesystem import PathBackend, PathBackendRegistryPort, PathResolverPort
+from .generators import (
+    Generator,
+    GeneratorRegistration,
+    GeneratorRegistryPort,
+    generates,
+)
+from .persistence import (
+    PersistenceReadBackend,
+    PersistenceReadRegistryPort,
+    PersistenceReadResolverPort,
+    PersistenceWriteBackend,
+    PersistenceWriteRegistryPort,
+    PersistenceWriteResolverPort,
+    Persistor,
+)
 from .plugin_loader import PluginLoader
 from .reference_resolver import ReferenceResolver
 from .value_reader import (
@@ -22,12 +36,20 @@ __all__ = [
     "ConnectionBackend",
     "ConnectionProviderPort",
     "ConnectionRegistryPort",
-    "PathBackend",
-    "PathBackendRegistryPort",
-    "PathResolverPort",
+    "Generator",
+    "GeneratorRegistration",
+    "GeneratorRegistryPort",
+    "PersistenceReadBackend",
+    "PersistenceReadRegistryPort",
+    "PersistenceReadResolverPort",
+    "PersistenceWriteBackend",
+    "PersistenceWriteRegistryPort",
+    "PersistenceWriteResolverPort",
+    "Persistor",
     "PluginLoader",
     "ReferenceResolver",
     "ValueReaderBackend",
     "ValueReaderRegistryPort",
     "ValueResolverPort",
+    "generates",
 ]

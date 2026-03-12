@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from .backends import (
     ConnectionBackendSpec,
+    DestinationBackendSpec,
     PathBackendSpec,
     ValueReaderBackendSpec,
 )
@@ -20,7 +21,8 @@ class Project:
     vars: dict[str, ValueSpec] | None = None
     value_readers: list[ValueReaderBackendSpec] = field(default_factory=list)
     path_backends: list[PathBackendSpec] = field(default_factory=list)
+    destinations: list[DestinationBackendSpec]
     connections: list[ConnectionBackendSpec] = field(default_factory=list)
     tables: list[Table]
-    seeds: list[Seed]
-    sources: list[Source]
+    seeds: list[Seed] = field(default_factory=list)
+    sources: list[Source] = field(default_factory=list)

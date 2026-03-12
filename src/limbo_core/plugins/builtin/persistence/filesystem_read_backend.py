@@ -1,4 +1,4 @@
-"""Filesystem path backend implementation."""
+"""Filesystem persistence read backend implementation."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from limbo_core.application.interfaces import PathBackend
+from limbo_core.application.interfaces import PersistenceReadBackend
 from limbo_core.domain.entities import PathSpec, ResolvedResource
 
 
 @dataclass(slots=True)
-class FilesystemPathBackend(PathBackend):
+class FilesystemReadBackend(PersistenceReadBackend):
     """Resolve resources from local filesystem expressions."""
 
     cwd: Path = field(default_factory=Path.cwd)

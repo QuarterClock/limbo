@@ -10,13 +10,21 @@ from typing import TYPE_CHECKING
 import pytest
 
 from limbo_core.adapters.connections import ConnectionRegistry
-from limbo_core.adapters.filesystem import PathBackendRegistry
+from limbo_core.adapters.generators import GeneratorRegistry
+from limbo_core.adapters.persistence import (
+    PersistenceReadRegistry,
+    PersistenceWriteRegistry,
+)
 from limbo_core.adapters.value_reader import ValueReaderRegistry
 from limbo_core.application.interfaces import (
     BackendRegistration,
     ConnectionBackend,
-    PathBackend,
+    Generator,
+    GeneratorRegistration,
+    PersistenceReadBackend,
+    PersistenceWriteBackend,
     ValueReaderBackend,
+    generates,
 )
 from limbo_core.domain.entities import ResolvedResource
 from limbo_core.plugins import PluginManager, hookimpl
@@ -44,7 +52,7 @@ class PluginTestConnectionBackend(ConnectionBackend):
 
 
 class SamplePlugin:
-    """Sample plugin implementing connection hook."""
+    """Sample plugin implementing connection and backend hooks."""
 
     @hookimpl
     def limbo_register_connections(
@@ -55,6 +63,26 @@ class SamplePlugin:
             BackendRegistration(
                 key="test_plugin_conn",
                 backend_class=PluginTestConnectionBackend,
+            )
+        ]
+
+    @hookimpl
+    def limbo_register_persistence_write_backends(
+        self,
+    ) -> list[BackendRegistration[PersistenceWriteBackend]]:
+        """Register a dummy persistence write backend."""
+        return [
+            BackendRegistration(
+                key="memory", backend_class=_DummyPersistenceWriteBackend
+            )
+        ]
+
+    @hookimpl
+    def limbo_register_generators(self) -> list[GeneratorRegistration]:
+        """Register a dummy generator."""
+        return [
+            GeneratorRegistration(
+                namespace="pii", generator_class=_DummyGenerator
             )
         ]
 
@@ -75,11 +103,31 @@ class _StaticReader(ValueReaderBackend):
         return f"value:{key}"
 
 
-class _MockPathBackend(PathBackend):
+class _MockPathBackend(PersistenceReadBackend):
     def resolve(
         self, path_spec: object, *, base: object | None = None
     ) -> ResolvedResource:
         return ResolvedResource(backend="mock", uri="mock://resource")
+
+
+class _DummyPersistenceWriteBackend(PersistenceWriteBackend):
+    def save(self, name: str, data: object) -> None:
+        self._saved = (name, data)
+
+    def load(self, name: str) -> object:
+        return getattr(self, "_saved", (None, None))
+
+    def exists(self, name: str) -> bool:
+        return hasattr(self, "_saved")
+
+    def cleanup(self, name: str) -> None:
+        self._saved = None
+
+
+class _DummyGenerator(Generator):
+    @generates("email")
+    def email(self, context, **options):
+        return "dummy@example.com"
 
 
 class ReaderPlugin:
@@ -98,7 +146,7 @@ class PathPlugin:
     @hookimpl
     def limbo_register_path_backends(
         self,
-    ) -> list[BackendRegistration[PathBackend]]:
+    ) -> list[BackendRegistration[PersistenceReadBackend]]:
         return [BackendRegistration(key="mock", backend_class=_MockPathBackend)]
 
 
@@ -115,22 +163,24 @@ def value_reader_registry() -> ValueReaderRegistry:
 
 
 @pytest.fixture
-def path_backend_registry() -> PathBackendRegistry:
+def path_backend_registry() -> PersistenceReadRegistry:
     """Provide isolated path backend registry per test."""
-    return PathBackendRegistry()
+    return PersistenceReadRegistry()
 
 
 @pytest.fixture
 def fresh_plugin_manager(
     connection_registry: ConnectionRegistry,
     value_reader_registry: ValueReaderRegistry,
-    path_backend_registry: PathBackendRegistry,
+    path_backend_registry: PersistenceReadRegistry,
 ) -> PluginManager:
     """Create a fresh PluginManager instance."""
     return PluginManager(
         connection_registry=connection_registry,
         value_reader_registry=value_reader_registry,
         path_backend_registry=path_backend_registry,
+        persistence_write_registry=PersistenceWriteRegistry(),
+        generator_registry=GeneratorRegistry(),
     )
 
 
@@ -148,12 +198,16 @@ class TestPluginManagerInitialization:
         first = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_backend_registry=PathBackendRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
+            persistence_write_registry=PersistenceWriteRegistry(),
+            generator_registry=GeneratorRegistry(),
         )
         second = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_backend_registry=PathBackendRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
+            persistence_write_registry=PersistenceWriteRegistry(),
+            generator_registry=GeneratorRegistry(),
         )
         first.register(SamplePlugin(), name="first")
         assert "first" in first.get_plugin_names()
@@ -273,7 +327,9 @@ class TestPluginManagerLoadPlugins:
         manager = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=value_reader_registry,
-            path_backend_registry=PathBackendRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
+            persistence_write_registry=PersistenceWriteRegistry(),
+            generator_registry=GeneratorRegistry(),
         )
         manager.register(ReaderPlugin(), name="reader_plugin")
         manager.load_plugins()
@@ -282,11 +338,13 @@ class TestPluginManagerLoadPlugins:
 
     def test_register_path_backends_hook(self) -> None:
         """Path-backend hook populates path backend registry."""
-        path_backend_registry = PathBackendRegistry()
+        path_backend_registry = PersistenceReadRegistry()
         manager = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
             path_backend_registry=path_backend_registry,
+            persistence_write_registry=PersistenceWriteRegistry(),
+            generator_registry=GeneratorRegistry(),
         )
         manager.register(PathPlugin(), name="path_plugin")
         manager.load_plugins()
@@ -294,6 +352,36 @@ class TestPluginManagerLoadPlugins:
             "path_from": {"backend": "mock", "location": "mock://x"}
         })
         assert resolved.backend == "mock"
+
+    def test_register_persistence_write_backends_hook(self) -> None:
+        """Persistence-write hook populates write backend registry."""
+        manager = PluginManager(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
+            persistence_write_registry=PersistenceWriteRegistry(),
+            generator_registry=GeneratorRegistry(),
+        )
+        manager.register(SamplePlugin(), name="sample")
+        manager.load_plugins()
+
+        types = manager._persistence_write_registry.get_types()
+        assert "memory" in types
+
+    def test_register_generators_hook(self) -> None:
+        """Generator hook populates generator registry."""
+        manager = PluginManager(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
+            persistence_write_registry=PersistenceWriteRegistry(),
+            generator_registry=GeneratorRegistry(),
+        )
+        manager.register(SamplePlugin(), name="sample")
+        manager.load_plugins()
+
+        hooks = manager._generator_registry.get_hooks()
+        assert "pii.email" in hooks
 
 
 class TestNoImportSideEffects:

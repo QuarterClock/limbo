@@ -24,17 +24,14 @@ def _parse_seeds(value: Any, *, path: tuple[PathPart, ...]) -> list[Seed]:
     """Parse seed payload list.
 
     Returns:
-        Parsed seed entities.
-
-    Raises:
-        ParseError: If list structure or seed payloads are invalid.
+        Parsed seed entities (may be empty).
     """
+    if value is None:
+        return []
     payloads = _expect_list(value, path=path)
     parsed: list[Seed] = []
     for idx, payload in enumerate(payloads):
         parsed.append(_parse_seed(payload, path=(*path, idx)))
-    if not parsed:
-        raise ParseError(path=path, message="must have at least one item")
     return parsed
 
 

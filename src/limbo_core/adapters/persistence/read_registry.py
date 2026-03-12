@@ -1,4 +1,4 @@
-"""Path backend registry with backend dispatch."""
+"""Persistence read backend registry with backend dispatch."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 from limbo_core.adapters.base_registry import BaseRegistry
 from limbo_core.application.interfaces import (
-    PathBackend,
-    PathBackendRegistryPort,
+    PersistenceReadBackend,
+    PersistenceReadRegistryPort,
 )
 from limbo_core.application.parsers.common import InvalidPathSpecError
 from limbo_core.application.parsers.path_spec_parser import parse_path_spec
@@ -24,17 +24,18 @@ if TYPE_CHECKING:
 
 
 @dataclass(slots=True)
-class PathBackendRegistry(
-    BaseRegistry[PathBackend, PathBackendSpec], PathBackendRegistryPort
+class PersistenceReadRegistry(
+    BaseRegistry[PersistenceReadBackend, PathBackendSpec],
+    PersistenceReadRegistryPort,
 ):
-    """Resolve path expressions through backend dispatch."""
+    """Resolve persistence expressions through backend dispatch."""
 
-    _backend_label: str = "path backend"
+    _backend_label: str = "persistence backend"
 
     def resolve(
         self, raw_path: Any, *, context: ResolutionContext | None = None
     ) -> ResolvedResource:
-        """Resolve one resource path through selected backend.
+        """Resolve one resource expression through selected backend.
 
         Returns:
             Backend-agnostic resolved resource descriptor.

@@ -4,9 +4,11 @@ from .artifacts import Artifact, ArtifactColumn, ArtifactConfig, DataType
 from .backends import (
     BackendSpec,
     ConnectionBackendSpec,
+    DestinationBackendSpec,
     PathBackendSpec,
     ValueReaderBackendSpec,
 )
+from .generation import GenerationContext
 from .project import Project
 from .resources import PathSpec
 from .seeds import ResolvedResource, Seed, SeedColumn, SeedConfig, SeedFile
@@ -27,6 +29,8 @@ __all__ = [
     "BackendSpec",
     "ConnectionBackendSpec",
     "DataType",
+    "DestinationBackendSpec",
+    "GenerationContext",
     "LiteralValue",
     "LookupValue",
     "PathBackendSpec",

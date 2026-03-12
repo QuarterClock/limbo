@@ -3,13 +3,21 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass, field
+from typing import Any
 
 import pytest
 
 import limbo_core.application.parsers.tables_parser as tables_parser_module
 from limbo_core.adapters.connections import ConnectionRegistry
-from limbo_core.adapters.filesystem import PathBackendRegistry
+from limbo_core.adapters.persistence import (
+    PersistenceReadRegistry,
+    PersistenceWriteRegistry,
+)
 from limbo_core.adapters.value_reader import ValueReaderRegistry
+from limbo_core.application.interfaces.persistence import (
+    PersistenceWriteBackend,
+)
 from limbo_core.application.parsers import ParseError, ProjectParser
 from limbo_core.application.parsers.common import InvalidValueSpecError
 from limbo_core.domain.entities import (
@@ -18,8 +26,27 @@ from limbo_core.domain.entities import (
     LookupValue,
     TableRelationship,
 )
-from limbo_core.plugins.builtin.path_backends import FilesystemPathBackend
+from limbo_core.plugins.builtin.persistence import FilesystemReadBackend
 from limbo_core.plugins.builtin.value_readers import OsEnvReader
+
+
+@dataclass(slots=True)
+class _StubWriteBackend(PersistenceWriteBackend):
+    """Minimal write backend for parser tests."""
+
+    store: dict[str, Any] = field(default_factory=dict)
+
+    def save(self, name: str, data: Any) -> None:
+        self.store[name] = data
+
+    def load(self, name: str) -> Any:
+        return self.store[name]
+
+    def exists(self, name: str) -> bool:
+        return name in self.store
+
+    def cleanup(self, name: str) -> None:
+        self.store.pop(name, None)
 
 
 @pytest.fixture
@@ -34,6 +61,7 @@ def project_parser() -> ProjectParser:
 def _minimal_project_payload() -> dict[str, object]:
     return {
         "connections": [],
+        "destinations": [{"name": "default", "type": "file"}],
         "tables": [
             {
                 "name": "users",
@@ -415,14 +443,19 @@ class TestParseProjectValidation:
         with pytest.raises(ParseError, match="tables\\[0\\]\\.columns"):
             project_parser.parse(payload)
 
-    def test_rejects_empty_seeds(self, project_parser: ProjectParser) -> None:
-        """Seeds list cannot be empty."""
+    def test_accepts_empty_seeds(self, project_parser: ProjectParser) -> None:
+        """Empty seeds list is accepted."""
         payload = _minimal_project_payload()
         payload["seeds"] = []
-        with pytest.raises(
-            ParseError, match="seeds: must have at least one item"
-        ):
-            project_parser.parse(payload)
+        project = project_parser.parse(payload)
+        assert project.seeds == []
+
+    def test_accepts_omitted_seeds(self, project_parser: ProjectParser) -> None:
+        """Omitting seeds produces an empty list."""
+        payload = _minimal_project_payload()
+        payload.pop("seeds", None)
+        project = project_parser.parse(payload)
+        assert project.seeds == []
 
     def test_rejects_empty_seed_columns(
         self, project_parser: ProjectParser
@@ -433,14 +466,21 @@ class TestParseProjectValidation:
         with pytest.raises(ParseError, match="seeds\\[0\\]\\.columns"):
             project_parser.parse(payload)
 
-    def test_rejects_empty_sources(self, project_parser: ProjectParser) -> None:
-        """Source list cannot be empty."""
+    def test_accepts_empty_sources(self, project_parser: ProjectParser) -> None:
+        """Empty sources list is accepted."""
         payload = _minimal_project_payload()
         payload["sources"] = []
-        with pytest.raises(
-            ParseError, match="sources: must have at least one item"
-        ):
-            project_parser.parse(payload)
+        project = project_parser.parse(payload)
+        assert project.sources == []
+
+    def test_accepts_omitted_sources(
+        self, project_parser: ProjectParser
+    ) -> None:
+        """Omitting sources produces an empty list."""
+        payload = _minimal_project_payload()
+        payload.pop("sources", None)
+        project = project_parser.parse(payload)
+        assert project.sources == []
 
     def test_rejects_empty_source_columns(
         self, project_parser: ProjectParser
@@ -449,6 +489,26 @@ class TestParseProjectValidation:
         payload = _minimal_project_payload()
         payload["sources"][0]["columns"] = []  # type: ignore[index]
         with pytest.raises(ParseError, match="sources\\[0\\]\\.columns"):
+            project_parser.parse(payload)
+
+    def test_rejects_missing_destinations(
+        self, project_parser: ProjectParser
+    ) -> None:
+        """Destinations must be present and non-empty."""
+        payload = _minimal_project_payload()
+        payload.pop("destinations", None)
+        with pytest.raises(ParseError, match="destinations: expects a list"):
+            project_parser.parse(payload)
+
+    def test_rejects_empty_destinations(
+        self, project_parser: ProjectParser
+    ) -> None:
+        """Destinations list cannot be empty."""
+        payload = _minimal_project_payload()
+        payload["destinations"] = []
+        with pytest.raises(
+            ParseError, match="destinations: must have at least one item"
+        ):
             project_parser.parse(payload)
 
     def test_parses_multiple_tables(
@@ -490,10 +550,10 @@ class TestParseBackendBindings:
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_backend_registry=PathBackendRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
         )
         parser.value_reader_registry.register("env", OsEnvReader)
-        parser.path_backend_registry.register("file", FilesystemPathBackend)
+        parser.path_backend_registry.register("file", FilesystemReadBackend)
         payload = _minimal_project_payload()
         payload["value_readers"] = [{"name": "runtime_env", "type": "env"}]
         payload["path_backends"] = [{"name": "localfs", "type": "file"}]
@@ -527,10 +587,10 @@ class TestParseBackendBindings:
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_backend_registry=PathBackendRegistry(),
+            path_backend_registry=PersistenceReadRegistry(),
         )
         parser.value_reader_registry.register("env", OsEnvReader)
-        parser.path_backend_registry.register("file", FilesystemPathBackend)
+        parser.path_backend_registry.register("file", FilesystemReadBackend)
         payload = _minimal_project_payload()
         payload["value_readers"] = [{"name": "runtime_env", "type": "env"}]
         payload["path_backends"] = [{"name": "localfs", "type": "file"}]
@@ -543,3 +603,84 @@ class TestParseBackendBindings:
         parser.parse(_minimal_project_payload())
         assert parser.value_reader_registry.get_instances() == {}
         assert parser.path_backend_registry.get_instances() == {}
+
+
+# -------------------------------------------------------------------
+# Destination bindings
+# -------------------------------------------------------------------
+
+
+class TestParseDestinationBindings:
+    """Tests for project-level destination (write backend) binding parsing."""
+
+    @pytest.fixture
+    def parser_with_write_registry(self) -> ProjectParser:
+        """Parser with both read and write registries pre-loaded."""
+        write_registry = PersistenceWriteRegistry()
+        write_registry.register("memory", _StubWriteBackend)
+        return ProjectParser(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            destination_registry=write_registry,
+        )
+
+    def test_applies_destination_bindings(
+        self, parser_with_write_registry: ProjectParser
+    ) -> None:
+        """Parser configures named destination backend bindings."""
+        payload = _minimal_project_payload()
+        payload["destinations"] = [{"name": "output", "type": "memory"}]
+
+        project = parser_with_write_registry.parse(payload)
+
+        assert len(project.destinations) == 1
+        assert project.destinations[0].name == "output"
+        assert project.destinations[0].type == "memory"
+        dest_inst = (
+            parser_with_write_registry.destination_registry.get_instances()
+        )
+        assert "output" in dest_inst
+
+    def test_rejects_duplicate_destination_names(
+        self, parser_with_write_registry: ProjectParser
+    ) -> None:
+        """Destination names must be unique."""
+        payload = _minimal_project_payload()
+        payload["destinations"] = [
+            {"name": "out", "type": "memory"},
+            {"name": "out", "type": "memory"},
+        ]
+        with pytest.raises(
+            ParseError, match=r"destinations\[1\]\.name: duplicate backend name"
+        ):
+            parser_with_write_registry.parse(payload)
+
+    def test_resets_destination_bindings_between_calls(self) -> None:
+        """Destination bindings do not leak across parse calls."""
+        write_registry = PersistenceWriteRegistry()
+        write_registry.register("memory", _StubWriteBackend)
+        parser = ProjectParser(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            destination_registry=write_registry,
+        )
+        payload = _minimal_project_payload()
+        payload["destinations"] = [{"name": "output", "type": "memory"}]
+        parser.parse(payload)
+        assert "output" in write_registry.get_instances()
+
+        reset_payload = _minimal_project_payload()
+        reset_payload["destinations"] = [{"name": "other", "type": "memory"}]
+        parser.parse(reset_payload)
+        assert "output" not in write_registry.get_instances()
+
+    def test_skips_configuration_when_no_write_registry(
+        self, project_parser: ProjectParser
+    ) -> None:
+        """Destinations are parsed but not configured when no registry."""
+        payload = _minimal_project_payload()
+        payload["destinations"] = [{"name": "output", "type": "memory"}]
+        project = project_parser.parse(payload)
+
+        assert len(project.destinations) == 1
+        assert project.destinations[0].name == "output"

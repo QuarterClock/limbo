@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from limbo_core.application.context import ResolutionContext, RuntimeContext
     from limbo_core.application.interfaces import (
         ConnectionRegistryPort,
-        PathResolverPort,
+        PersistenceReadResolverPort,
     )
     from limbo_core.domain.entities import Project
 
@@ -36,7 +36,7 @@ class UnknownSourceConnectionError(DomainValidationError):
 class ProjectValidatorService:
     """Validate project references that require runtime context."""
 
-    path_registry: PathResolverPort
+    path_registry: PersistenceReadResolverPort
     connection_registry: ConnectionRegistryPort
 
     def validate(
@@ -55,9 +55,10 @@ class ProjectValidatorService:
             GeneratorNotFoundError: If a generator name is missing.
             UnknownSourceConnectionError: If a source connection is unknown.
         """
+        available_generators = context.generator_registry.get_hooks()
         for table in project.tables:
             for column in table.columns:
-                if column.generator not in context.generators:
+                if column.generator not in available_generators:
                     raise GeneratorNotFoundError(column.generator)
 
         configured_connections = self.connection_registry.get_instances()

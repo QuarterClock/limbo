@@ -15,8 +15,12 @@ if TYPE_CHECKING:
         BackendRegistration,
         ConnectionBackend,
         ConnectionRegistryPort,
-        PathBackend,
-        PathBackendRegistryPort,
+        GeneratorRegistration,
+        GeneratorRegistryPort,
+        PersistenceReadBackend,
+        PersistenceReadRegistryPort,
+        PersistenceWriteBackend,
+        PersistenceWriteRegistryPort,
         ValueReaderBackend,
         ValueReaderRegistryPort,
     )
@@ -31,7 +35,9 @@ class PluginManager:
         self,
         connection_registry: ConnectionRegistryPort,
         value_reader_registry: ValueReaderRegistryPort,
-        path_backend_registry: PathBackendRegistryPort,
+        path_backend_registry: PersistenceReadRegistryPort,
+        persistence_write_registry: PersistenceWriteRegistryPort,
+        generator_registry: GeneratorRegistryPort,
     ) -> None:
         """Initialize plugin manager with explicit dependencies."""
         self._pm = pluggy.PluginManager(PROJECT_NAME)
@@ -39,6 +45,8 @@ class PluginManager:
         self._connection_registry = connection_registry
         self._value_reader_registry = value_reader_registry
         self._path_backend_registry = path_backend_registry
+        self._persistence_write_registry = persistence_write_registry
+        self._generator_registry = generator_registry
         self._plugins_loaded = False
         self._ensure_builtin_registered()
 
@@ -93,6 +101,8 @@ class PluginManager:
         self.load_setuptools_plugins()
         self._register_value_readers()
         self._register_path_backends()
+        self._register_persistence_write_backends()
+        self._register_generators()
         self._register_connections()
         self._plugins_loaded = True
 
@@ -142,8 +152,8 @@ class PluginManager:
                 )
 
     def _register_path_backends(self) -> None:
-        """Register path backends contributed by plugins."""
-        results: list[list[BackendRegistration[PathBackend]]] = (
+        """Register persistence read backends contributed by plugins."""
+        results: list[list[BackendRegistration[PersistenceReadBackend]]] = (
             self.hook.limbo_register_path_backends()
         )
         for registrations in results:
@@ -151,3 +161,23 @@ class PluginManager:
                 self._path_backend_registry.register(
                     registration.key, registration.backend_class
                 )
+
+    def _register_persistence_write_backends(self) -> None:
+        """Register persistence write backends contributed by plugins."""
+        results: list[list[BackendRegistration[PersistenceWriteBackend]]] = (
+            self.hook.limbo_register_persistence_write_backends()
+        )
+        for registrations in results:
+            for registration in registrations:
+                self._persistence_write_registry.register(
+                    registration.key, registration.backend_class
+                )
+
+    def _register_generators(self) -> None:
+        """Register generators contributed by plugins."""
+        results: list[list[GeneratorRegistration]] = (
+            self.hook.limbo_register_generators()
+        )
+        for registrations in results:
+            for registration in registrations:
+                self._generator_registry.register(registration)

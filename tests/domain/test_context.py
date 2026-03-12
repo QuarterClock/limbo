@@ -8,7 +8,10 @@ from limbo_core.application.context import (
     ConnectionNotFoundError,
     RuntimeContext,
 )
-from limbo_core.application.interfaces import ReferenceResolver
+from limbo_core.application.interfaces import (
+    GeneratorRegistryPort,
+    ReferenceResolver,
+)
 
 
 class _StubResolver(ReferenceResolver):
@@ -18,12 +21,28 @@ class _StubResolver(ReferenceResolver):
         return f"resolved:{reference}"
 
 
+class _StubRegistry(GeneratorRegistryPort):
+    """Minimal generator registry stub."""
+
+    def register(self, registration) -> None:  # pragma: no cover
+        raise NotImplementedError
+
+    def get_hooks(self) -> frozenset[str]:  # pragma: no cover
+        return frozenset()
+
+    def resolve(self, qualified_hook: str):  # pragma: no cover
+        raise NotImplementedError
+
+    def clear(self) -> None:  # pragma: no cover
+        raise NotImplementedError
+
+
 class TestRuntimeContextResolveReference:
     """Tests for RuntimeContext.resolve_reference."""
 
     def test_requires_resolver(self) -> None:
         """RuntimeContext raises when reference resolver is not configured."""
-        context = RuntimeContext(generators=set())
+        context = RuntimeContext(generator_registry=_StubRegistry())
         with pytest.raises(
             RuntimeError, match="Reference resolver is not configured"
         ):
@@ -32,7 +51,8 @@ class TestRuntimeContextResolveReference:
     def test_delegates_to_resolver(self) -> None:
         """RuntimeContext delegates reference lookup to resolver."""
         context = RuntimeContext(
-            generators=set(), reference_resolver=_StubResolver()
+            generator_registry=_StubRegistry(),
+            reference_resolver=_StubResolver(),
         )
         assert context.resolve_reference("table.col") == "resolved:table.col"
 

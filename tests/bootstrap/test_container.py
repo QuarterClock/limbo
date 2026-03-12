@@ -2,7 +2,30 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from typing import Any
+
+from limbo_core.application.interfaces.persistence import (
+    PersistenceWriteBackend,
+)
 from limbo_core.bootstrap import Container, get_container
+
+
+@dataclass(slots=True)
+class _StubWriteBackend(PersistenceWriteBackend):
+    store: dict[str, Any] = field(default_factory=dict)
+
+    def save(self, name: str, data: Any) -> None:
+        self.store[name] = data
+
+    def load(self, name: str) -> Any:
+        return self.store[name]
+
+    def exists(self, name: str) -> bool:
+        return name in self.store
+
+    def cleanup(self, name: str) -> None:
+        self.store.pop(name, None)
 
 
 class TestContainer:
@@ -16,8 +39,13 @@ class TestContainer:
 
     def test_load_project_delegates_to_loader_service(self) -> None:
         """Container.load_project returns parsed project from wired service."""
+        container = Container()
+        container.persistence_write_registry.register(
+            "memory", _StubWriteBackend
+        )
         payload = {
             "connections": [],
+            "destinations": [{"name": "default", "type": "memory"}],
             "tables": [
                 {
                     "name": "users",
@@ -31,23 +59,6 @@ class TestContainer:
                     "config": {},
                 }
             ],
-            "seeds": [
-                {
-                    "name": "seed_users",
-                    "columns": [{"name": "id", "data_type": "integer"}],
-                    "seed_file": {
-                        "path": "tests/fixtures/test_project/seeds/sex.csv"
-                    },
-                    "config": {},
-                }
-            ],
-            "sources": [
-                {
-                    "name": "source_users",
-                    "columns": [{"name": "id", "data_type": "integer"}],
-                    "config": {"connection": "main"},
-                }
-            ],
         }
-        project = Container().load_project(payload)
+        project = container.load_project(payload)
         assert project.tables[0].name == "users"

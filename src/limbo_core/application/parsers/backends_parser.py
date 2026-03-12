@@ -5,7 +5,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, TypeVar
 
-from limbo_core.domain.entities import PathBackendSpec, ValueReaderBackendSpec
+from limbo_core.domain.entities import (
+    DestinationBackendSpec,
+    PathBackendSpec,
+    ValueReaderBackendSpec,
+)
 from limbo_core.domain.entities.backends.backend_spec import BackendSpec
 from limbo_core.validation import ValidationError
 
@@ -113,4 +117,31 @@ def _parse_path_backends(
             raise ParseError(path=(*path, idx), message=str(err)) from err
         check_duplicate_name(spec.name, seen_names, path=(*path, idx))
         parsed.append(spec)
+    return parsed
+
+
+def _parse_destinations(
+    value: Any, *, path: tuple[PathPart, ...]
+) -> list[DestinationBackendSpec]:
+    """Parse destination (persistence write) backend bindings.
+
+    Returns:
+        Parsed destination backend specs.
+
+    Raises:
+        ParseError: If the destination backend payload is invalid or empty.
+    """
+    payloads = _expect_list(value, path=path)
+    parsed: list[DestinationBackendSpec] = []
+    seen_names: set[str] = set()
+    for idx, payload in enumerate(payloads):
+        item = _expect_mapping(payload, path=(*path, idx))
+        try:
+            spec = parse_backend_spec(item, spec_cls=DestinationBackendSpec)
+        except ValidationError as err:
+            raise ParseError(path=(*path, idx), message=str(err)) from err
+        check_duplicate_name(spec.name, seen_names, path=(*path, idx))
+        parsed.append(spec)
+    if not parsed:
+        raise ParseError(path=path, message="must have at least one item")
     return parsed

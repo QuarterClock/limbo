@@ -1,4 +1,4 @@
-"""Backend interface for path resolution."""
+"""Backend interface for persistence path resolution."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from limbo_core.domain.entities import PathSpec, ResolvedResource
 
 
-class PathBackend(ABC):
+class PersistenceReadBackend(ABC):
     """Backend contract for resolving resource locations."""
 
     @abstractmethod

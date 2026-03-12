@@ -1,0 +1,33 @@
+"""Persistor abstraction backed by persistence write backends."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import Any
+
+
+class Persistor(ABC):
+    """Coordinate materialization and caching of generated data."""
+
+    @abstractmethod
+    def save(self, name: str, data: Any, *, materialize: bool = True) -> None:
+        """Save data under a logical name.
+
+        Args:
+            name: Logical table or artifact name.
+            data: Data payload to persist.
+            materialize: When True, write to permanent storage. When False,
+                cache for intermediate reuse by downstream dependents.
+        """
+
+    @abstractmethod
+    def load(self, name: str) -> Any:
+        """Load previously saved or cached data."""
+
+    @abstractmethod
+    def exists(self, name: str) -> bool:
+        """Check whether data for the given name exists."""
+
+    @abstractmethod
+    def cleanup(self, name: str) -> None:
+        """Remove saved or cached data for the given name."""

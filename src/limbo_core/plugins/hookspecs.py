@@ -40,7 +40,9 @@ if TYPE_CHECKING:
     from limbo_core.application.interfaces import (
         BackendRegistration,
         ConnectionBackend,
-        PathBackend,
+        GeneratorRegistration,
+        PersistenceReadBackend,
+        PersistenceWriteBackend,
         ValueReaderBackend,
     )
 
@@ -64,22 +66,6 @@ class LimboHookSpec:
 
         Returns:
             List of explicit connection backend registrations.
-
-        Example:
-            >>> @hookimpl
-            ... def limbo_register_connections(
-            ...     self,
-            ... ) -> list[BackendRegistration[ConnectionBackend]]:
-            ...     return [
-            ...         BackendRegistration(
-            ...             key="postgresql",
-            ...             backend_class=PostgreSQLConnection,
-            ...         ),
-            ...         BackendRegistration(
-            ...             key="mysql",
-            ...             backend_class=MySQLConnection,
-            ...         ),
-            ...     ]
         """
 
     @hookspec
@@ -95,17 +81,31 @@ class LimboHookSpec:
     @hookspec
     def limbo_register_path_backends(  # type: ignore[empty-body]
         self,
-    ) -> list[BackendRegistration[PathBackend]]:
-        """Register path backends for runtime resource resolution.
+    ) -> list[BackendRegistration[PersistenceReadBackend]]:
+        """Register persistence read backends for runtime resource resolution.
 
         Returns:
-            List of explicit path backend registrations.
+            List of explicit persistence read backend registrations.
         """
+
+    @hookspec
+    def limbo_register_persistence_write_backends(  # type: ignore[empty-body]
+        self,
+    ) -> list[BackendRegistration[PersistenceWriteBackend]]:
+        """Register persistence write backends for data materialization.
+
+        Returns:
+            List of explicit persistence write backend registrations.
+        """
+
+    @hookspec
+    def limbo_register_generators(  # type: ignore[empty-body]
+        self,
+    ) -> list[GeneratorRegistration]:
+        """Register generator classes for hook-based value generation."""
 
     # =========================================================================
     # Future Hook Categories
     # =========================================================================
     # The following hooks will be added as the plugin system expands:
-    # - limbo_register_generators: Register custom field generators
-    # - limbo_register_persistors: Register custom data persistors
     # - limbo_startup / limbo_shutdown: Lifecycle hooks

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from limbo_core.domain.entities import (
     ConnectionBackendSpec,
+    DestinationBackendSpec,
     PathBackendSpec,
     Project,
     SeedFile,
@@ -20,7 +21,11 @@ from limbo_core.domain.entities import (
 )
 from limbo_core.errors import LimboValidationError
 
-from .backends_parser import _parse_path_backends, _parse_value_reader_backends
+from .backends_parser import (
+    _parse_destinations,
+    _parse_path_backends,
+    _parse_value_reader_backends,
+)
 from .common import InvalidValueSpecError, ParseError, _expect_mapping
 from .connections_parser import _parse_connections
 from .seeds_parser import _parse_seed_file, _parse_seeds
@@ -29,9 +34,12 @@ from .tables_parser import _parse_table_column, _parse_tables
 from .value_spec_parser import parse_value_spec
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from limbo_core.application.interfaces import (
         ConnectionRegistryPort,
-        PathBackendRegistryPort,
+        PersistenceReadRegistryPort,
+        PersistenceWriteRegistryPort,
         ValueReaderRegistryPort,
     )
 
@@ -42,7 +50,8 @@ class ProjectParser:
 
     connection_registry: ConnectionRegistryPort
     value_reader_registry: ValueReaderRegistryPort
-    path_backend_registry: PathBackendRegistryPort | None = None
+    path_backend_registry: PersistenceReadRegistryPort | None = None
+    destination_registry: PersistenceWriteRegistryPort | None = None
 
     def parse(self, payload: dict[str, Any]) -> Project:
         """Parse a raw project payload into a typed project entity.
@@ -61,8 +70,13 @@ class ProjectParser:
         path_backends = _parse_path_backends(
             root.get("path_backends", []), path=("path_backends",)
         )
+        destinations = _parse_destinations(
+            root.get("destinations"), path=("destinations",)
+        )
         self._configure_backends(
-            value_readers=value_readers, path_backends=path_backends
+            value_readers=value_readers,
+            path_backends=path_backends,
+            destinations=destinations,
         )
 
         connections = _parse_connections(
@@ -73,13 +87,14 @@ class ProjectParser:
         )
         self._configure_connections(connections)
         tables = _parse_tables(root.get("tables"), path=("tables",))
-        seeds = _parse_seeds(root.get("seeds"), path=("seeds",))
-        sources = _parse_sources(root.get("sources"), path=("sources",))
+        seeds = _parse_seeds(root.get("seeds", []), path=("seeds",))
+        sources = _parse_sources(root.get("sources", []), path=("sources",))
 
         return Project(
             vars=parsed_vars,
             value_readers=value_readers,
             path_backends=path_backends,
+            destinations=destinations,
             connections=connections,
             tables=tables,
             seeds=seeds,
@@ -138,36 +153,35 @@ class ProjectParser:
         *,
         value_readers: list[ValueReaderBackendSpec],
         path_backends: list[PathBackendSpec],
+        destinations: list[DestinationBackendSpec],
     ) -> None:
-        """Configure value-reader and path backend registry instances.
+        """Configure value-reader, path, and destination backend instances."""
+        self._configure_registry(
+            self.value_reader_registry, value_readers, "value_readers"
+        )
+        if self.path_backend_registry is not None:
+            self._configure_registry(
+                self.path_backend_registry, path_backends, "path_backends"
+            )
+        if self.destination_registry is not None:
+            self._configure_registry(
+                self.destination_registry, destinations, "destinations"
+            )
+
+    @staticmethod
+    def _configure_registry(
+        registry: Any, specs: Sequence[Any], section: str
+    ) -> None:
+        """Configure a single registry from parsed specs.
 
         Raises:
-            ParseError: If a backend binding configuration is invalid.
+            ParseError: If a backend binding is invalid.
         """
-        for idx, reader in enumerate(value_readers):
+        for idx, spec in enumerate(specs):
             try:
-                self.value_reader_registry.configure(reader)
-            except ValueError as err:
-                raise ParseError(
-                    path=("value_readers", idx), message=str(err)
-                ) from err
-            except LimboValidationError as err:
-                raise ParseError(
-                    path=("value_readers", idx), message=str(err)
-                ) from err
-        if self.path_backend_registry is None:
-            return
-        for idx, backend in enumerate(path_backends):
-            try:
-                self.path_backend_registry.configure(backend)
-            except ValueError as err:
-                raise ParseError(
-                    path=("path_backends", idx), message=str(err)
-                ) from err
-            except LimboValidationError as err:
-                raise ParseError(
-                    path=("path_backends", idx), message=str(err)
-                ) from err
+                registry.configure(spec)
+            except (ValueError, LimboValidationError) as err:
+                raise ParseError(path=(section, idx), message=str(err)) from err
 
     def _configure_connections(
         self, connections: list[ConnectionBackendSpec]
@@ -193,6 +207,7 @@ class ProjectParser:
         """Reset project-scoped backend bindings before each parse."""
         self.value_reader_registry.clear_instances()
         self.connection_registry.clear_instances()
-        if self.path_backend_registry is None:
-            return
-        self.path_backend_registry.clear_instances()
+        if self.path_backend_registry is not None:
+            self.path_backend_registry.clear_instances()
+        if self.destination_registry is not None:
+            self.destination_registry.clear_instances()

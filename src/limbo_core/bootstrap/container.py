@@ -6,7 +6,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from limbo_core.adapters.connections import ConnectionRegistry
-from limbo_core.adapters.filesystem import PathBackendRegistry
+from limbo_core.adapters.generators import GeneratorRegistry
+from limbo_core.adapters.persistence import (
+    PersistenceReadRegistry,
+    PersistenceWriteRegistry,
+)
 from limbo_core.adapters.plugins import PluggyPluginLoader
 from limbo_core.adapters.value_reader import ValueReaderRegistry
 from limbo_core.application.parsers import ProjectParser
@@ -31,8 +35,14 @@ class Container:
     value_reader_registry: ValueReaderRegistry = field(
         default_factory=ValueReaderRegistry
     )
-    path_registry: PathBackendRegistry = field(
-        default_factory=PathBackendRegistry
+    path_registry: PersistenceReadRegistry = field(
+        default_factory=PersistenceReadRegistry
+    )
+    persistence_write_registry: PersistenceWriteRegistry = field(
+        default_factory=PersistenceWriteRegistry
+    )
+    generator_registry: GeneratorRegistry = field(
+        default_factory=GeneratorRegistry
     )
     plugin_manager: PluginManager = field(init=False)
     plugin_loader: PluggyPluginLoader = field(init=False)
@@ -46,12 +56,15 @@ class Container:
             connection_registry=self.connection_registry,
             value_reader_registry=self.value_reader_registry,
             path_backend_registry=self.path_registry,
+            persistence_write_registry=self.persistence_write_registry,
+            generator_registry=self.generator_registry,
         )
         self.plugin_loader = PluggyPluginLoader(manager=self.plugin_manager)
         self.project_parser = ProjectParser(
             connection_registry=self.connection_registry,
             value_reader_registry=self.value_reader_registry,
             path_backend_registry=self.path_registry,
+            destination_registry=self.persistence_write_registry,
         )
         self.project_validator_service = ProjectValidatorService(
             path_registry=self.path_registry,

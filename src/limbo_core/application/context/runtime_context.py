@@ -6,14 +6,17 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from limbo_core.application.interfaces import ReferenceResolver
+    from limbo_core.application.interfaces import (
+        GeneratorRegistryPort,
+        ReferenceResolver,
+    )
 
 
 @dataclass(slots=True)
 class RuntimeContext:
     """Context for runtime checks and generation operations."""
 
-    generators: set[str]
+    generator_registry: GeneratorRegistryPort
     reference_resolver: ReferenceResolver | None = None
 
     def resolve_reference(self, reference: str) -> Any:

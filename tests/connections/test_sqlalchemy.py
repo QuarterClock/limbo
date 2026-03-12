@@ -116,6 +116,38 @@ class TestSQLAlchemyConnectionBackendFromSpec:
                 )
             )
 
+    def test_connection_args_rejects_non_mapping(self) -> None:
+        """`connection_args` must be a mapping when provided."""
+        with pytest.raises(
+            ValidationError,
+            match="SQLAlchemyConnection: `connection_args` expects a mapping",
+        ):
+            SQLAlchemyConnectionBackend.from_spec(
+                _sqlalchemy_spec(
+                    host="localhost",
+                    user="user",
+                    password="pass",
+                    database="db",
+                    connection_args="not-a-mapping",
+                )
+            )
+
+    def test_rejects_unknown_extra_config_fields(self) -> None:
+        """Unexpected extra config keys are rejected explicitly."""
+        with pytest.raises(
+            ValidationError,
+            match="SQLAlchemyConnection: unexpected config fields: extra",
+        ):
+            SQLAlchemyConnectionBackend.from_spec(
+                _sqlalchemy_spec(
+                    host="localhost",
+                    user="user",
+                    password="pass",
+                    database="db",
+                    extra="value",
+                )
+            )
+
     def test_rejects_unknown_type(self) -> None:
         with pytest.raises(ValidationError, match="expected type 'sqlalchemy'"):
             SQLAlchemyConnectionBackend.from_spec(

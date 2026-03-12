@@ -22,17 +22,14 @@ def _parse_sources(value: Any, *, path: tuple[PathPart, ...]) -> list[Source]:
     """Parse source payload list.
 
     Returns:
-        Parsed source entities.
-
-    Raises:
-        ParseError: If list structure or source payloads are invalid.
+        Parsed source entities (may be empty).
     """
+    if value is None:
+        return []
     payloads = _expect_list(value, path=path)
     parsed: list[Source] = []
     for idx, payload in enumerate(payloads):
         parsed.append(_parse_source(payload, path=(*path, idx)))
-    if not parsed:
-        raise ParseError(path=path, message="must have at least one item")
     return parsed
 
 
