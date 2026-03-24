@@ -10,8 +10,12 @@ from limbo_core.application.interfaces import (
     PersistenceWriteBackend,
     ValueReaderBackend,
 )
-from limbo_core.plugins.builtin.persistence.filesystem_read_backend import (
+from limbo_core.plugins.builtin.persistence import (
+    CsvFilePersistenceWriteBackend,
     FilesystemReadBackend,
+    JsonFilePersistenceWriteBackend,
+    JsonlFilePersistenceWriteBackend,
+    ParquetFilePersistenceWriteBackend,
 )
 from limbo_core.plugins.markers import hookimpl
 
@@ -65,14 +69,25 @@ class BuiltinPlugin:
     def limbo_register_persistence_write_backends(
         self,
     ) -> list[BackendRegistration[PersistenceWriteBackend]]:
-        """Register built-in persistence write backends.
-
-        The core library does not provide a default implementation yet.
+        """Register built-in tabular file persistence write backends.
 
         Returns:
-            Empty list - no built-in persistence write backends.
+            CSV, JSON, JSONL, and Parquet backends under fixed directories.
         """
-        return []
+        return [
+            BackendRegistration(
+                key="csv", backend_class=CsvFilePersistenceWriteBackend
+            ),
+            BackendRegistration(
+                key="json", backend_class=JsonFilePersistenceWriteBackend
+            ),
+            BackendRegistration(
+                key="jsonl", backend_class=JsonlFilePersistenceWriteBackend
+            ),
+            BackendRegistration(
+                key="parquet", backend_class=ParquetFilePersistenceWriteBackend
+            ),
+        ]
 
     @hookimpl
     def limbo_register_generators(self) -> list[GeneratorRegistration]:
