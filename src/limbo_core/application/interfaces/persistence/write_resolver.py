@@ -7,14 +7,17 @@ should depend on this port, not the full ``PersistenceWriteRegistryPort``.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from limbo_core.domain.value_objects import TabularBatch
 
 
 class PersistenceWriteResolverPort(ABC):
     """Write and read persisted resources through configured backends."""
 
     @abstractmethod
-    def save(self, backend_key: str, name: str, data: Any) -> None:
+    def save(self, backend_key: str, name: str, data: TabularBatch) -> None:
         """Write data to a configured backend instance.
 
         Args:
@@ -24,7 +27,7 @@ class PersistenceWriteResolverPort(ABC):
         """
 
     @abstractmethod
-    def load(self, backend_key: str, name: str) -> Any:
+    def load(self, backend_key: str, name: str) -> TabularBatch:
         """Load previously saved data from a configured backend.
 
         Args:

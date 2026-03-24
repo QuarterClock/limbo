@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 import pytest
 
@@ -15,18 +14,23 @@ from limbo_core.application.interfaces.persistence import (
     PersistenceWriteBackend,
 )
 from limbo_core.domain.entities.backends import DestinationBackendSpec
+from limbo_core.domain.value_objects import TabularBatch
+
+
+def _batch_id(value: int) -> TabularBatch:
+    return TabularBatch(column_names=("id",), rows=({"id": value},))
 
 
 @dataclass(slots=True)
 class _MemoryWriteBackend(PersistenceWriteBackend):
     """In-memory persistence backend used for tests."""
 
-    store: dict[str, Any] = field(default_factory=dict)
+    store: dict[str, TabularBatch] = field(default_factory=dict)
 
-    def save(self, name: str, data: Any) -> None:
+    def save(self, name: str, data: TabularBatch) -> None:
         self.store[name] = data
 
-    def load(self, name: str) -> Any:
+    def load(self, name: str) -> TabularBatch:
         return self.store[name]
 
     def exists(self, name: str) -> bool:
@@ -62,28 +66,30 @@ class TestDefaultPersistorMaterialize:
         write_registry: PersistenceWriteRegistry,
     ) -> None:
         """Materialized save delegates to the write backend."""
-        persistor.save("users", {"id": 1}, materialize=True)
+        batch = _batch_id(1)
+        persistor.save("users", batch, materialize=True)
 
         assert write_registry.exists("memory", "users")
-        assert write_registry.load("memory", "users") == {"id": 1}
+        assert write_registry.load("memory", "users") == batch
 
     def test_save_materialize_also_caches(
         self, persistor: DefaultPersistor
     ) -> None:
         """Materialized save populates the local cache."""
-        persistor.save("users", {"id": 1}, materialize=True)
+        batch = _batch_id(1)
+        persistor.save("users", batch, materialize=True)
 
         assert persistor.exists("users")
-        assert persistor.load("users") == {"id": 1}
+        assert persistor.load("users") == batch
 
     def test_load_returns_cached_value(
         self, persistor: DefaultPersistor
     ) -> None:
         """Load serves from cache when available."""
-        persistor.save("users", {"id": 1})
-        persistor.save("users", {"id": 2})
+        persistor.save("users", _batch_id(1))
+        persistor.save("users", _batch_id(2))
 
-        assert persistor.load("users") == {"id": 2}
+        assert persistor.load("users") == _batch_id(2)
 
 
 class TestDefaultPersistorCache:
@@ -95,7 +101,7 @@ class TestDefaultPersistorCache:
         write_registry: PersistenceWriteRegistry,
     ) -> None:
         """Non-materialized save only caches, does not hit the backend."""
-        persistor.save("users", {"id": 1}, materialize=False)
+        persistor.save("users", _batch_id(1), materialize=False)
 
         assert not write_registry.exists("memory", "users")
 
@@ -103,10 +109,11 @@ class TestDefaultPersistorCache:
         self, persistor: DefaultPersistor
     ) -> None:
         """Non-materialized save is still loadable from the persistor."""
-        persistor.save("users", {"id": 1}, materialize=False)
+        batch = _batch_id(1)
+        persistor.save("users", batch, materialize=False)
 
         assert persistor.exists("users")
-        assert persistor.load("users") == {"id": 1}
+        assert persistor.load("users") == batch
 
 
 class TestDefaultPersistorLoad:
@@ -118,9 +125,10 @@ class TestDefaultPersistorLoad:
         write_registry: PersistenceWriteRegistry,
     ) -> None:
         """Load falls through to write backend when not cached."""
-        write_registry.save("memory", "users", {"id": 99})
+        backend_batch = _batch_id(99)
+        write_registry.save("memory", "users", backend_batch)
 
-        assert persistor.load("users") == {"id": 99}
+        assert persistor.load("users") == backend_batch
 
     def test_load_prefers_cache(
         self,
@@ -128,10 +136,10 @@ class TestDefaultPersistorLoad:
         write_registry: PersistenceWriteRegistry,
     ) -> None:
         """Cache takes precedence over backend value."""
-        write_registry.save("memory", "users", {"id": 99})
-        persistor.save("users", {"id": 1}, materialize=False)
+        write_registry.save("memory", "users", _batch_id(99))
+        persistor.save("users", _batch_id(1), materialize=False)
 
-        assert persistor.load("users") == {"id": 1}
+        assert persistor.load("users") == _batch_id(1)
 
 
 class TestDefaultPersistorExists:
@@ -145,7 +153,7 @@ class TestDefaultPersistorExists:
 
     def test_exists_from_cache(self, persistor: DefaultPersistor) -> None:
         """Exists returns True for cache-only artifacts."""
-        persistor.save("users", {"id": 1}, materialize=False)
+        persistor.save("users", _batch_id(1), materialize=False)
         assert persistor.exists("users")
 
     def test_exists_falls_back_to_backend(
@@ -154,7 +162,7 @@ class TestDefaultPersistorExists:
         write_registry: PersistenceWriteRegistry,
     ) -> None:
         """Exists falls through to backend when not cached."""
-        write_registry.save("memory", "users", {"id": 99})
+        write_registry.save("memory", "users", _batch_id(99))
         assert persistor.exists("users")
 
 
@@ -167,7 +175,7 @@ class TestDefaultPersistorCleanup:
         write_registry: PersistenceWriteRegistry,
     ) -> None:
         """Cleanup removes data from both cache and backend."""
-        persistor.save("users", {"id": 1}, materialize=True)
+        persistor.save("users", _batch_id(1), materialize=True)
         assert persistor.exists("users")
 
         persistor.cleanup("users")
@@ -179,7 +187,7 @@ class TestDefaultPersistorCleanup:
         self, persistor: DefaultPersistor
     ) -> None:
         """Cleanup removes cache-only artifacts gracefully."""
-        persistor.save("users", {"id": 1}, materialize=False)
+        persistor.save("users", _batch_id(1), materialize=False)
 
         persistor.cleanup("users")
         assert not persistor.exists("users")

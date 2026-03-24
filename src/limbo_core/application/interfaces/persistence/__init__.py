@@ -1,5 +1,7 @@
 """Persistence backend interfaces."""
 
+from limbo_core.domain.value_objects import CellValue, TabularBatch
+
 from .persistor import Persistor
 from .read_backend import PersistenceReadBackend
 from .read_registry import PersistenceReadRegistryPort
@@ -9,6 +11,7 @@ from .write_registry import PersistenceWriteRegistryPort
 from .write_resolver import PersistenceWriteResolverPort
 
 __all__ = [
+    "CellValue",
     "PersistenceReadBackend",
     "PersistenceReadRegistryPort",
     "PersistenceReadResolverPort",
@@ -16,4 +19,5 @@ __all__ = [
     "PersistenceWriteRegistryPort",
     "PersistenceWriteResolverPort",
     "Persistor",
+    "TabularBatch",
 ]

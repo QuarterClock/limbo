@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from limbo_core.application.interfaces.persistence import Persistor
 
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from limbo_core.application.interfaces.persistence import (
         PersistenceWriteResolverPort,
     )
+    from limbo_core.domain.value_objects import TabularBatch
 
 
 @dataclass(slots=True)
@@ -24,15 +25,17 @@ class DefaultPersistor(Persistor):
 
     write_resolver: PersistenceWriteResolverPort
     default_backend_key: str = "file"
-    _cache: dict[str, Any] = field(default_factory=dict)
+    _cache: dict[str, TabularBatch] = field(default_factory=dict)
 
-    def save(self, name: str, data: Any, *, materialize: bool = True) -> None:
+    def save(
+        self, name: str, data: TabularBatch, *, materialize: bool = True
+    ) -> None:
         """Save data, optionally materializing to permanent storage."""
         self._cache[name] = data
         if materialize:
             self.write_resolver.save(self.default_backend_key, name, data)
 
-    def load(self, name: str) -> Any:
+    def load(self, name: str) -> TabularBatch:
         """Load data from cache first, falling back to write backend.
 
         Returns:

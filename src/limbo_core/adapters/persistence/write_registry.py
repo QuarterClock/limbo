@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
 
 from limbo_core.adapters.base_registry import BaseRegistry
 from limbo_core.application.interfaces import (
@@ -15,6 +15,9 @@ from limbo_core.domain.entities.backends.destination_backend_spec import (
 )
 from limbo_core.validation import ValidationError
 
+if TYPE_CHECKING:
+    from limbo_core.domain.value_objects import TabularBatch
+
 
 @dataclass(slots=True)
 class PersistenceWriteRegistry(
@@ -25,16 +28,16 @@ class PersistenceWriteRegistry(
 
     _backend_label: str = "persistence write backend"
 
-    def save(self, backend_key: str, name: str, data: Any) -> None:
+    def save(self, backend_key: str, name: str, data: TabularBatch) -> None:
         """Convenience helper to save via a configured backend instance."""
         backend = self._get_instance(backend_key)
         backend.save(name, data)
 
-    def load(self, backend_key: str, name: str) -> Any:
+    def load(self, backend_key: str, name: str) -> TabularBatch:
         """Convenience helper to load via a configured backend instance.
 
         Returns:
-            Loaded value for the given backend key and name.
+            Loaded tabular batch for the given backend key and name.
         """
         backend = self._get_instance(backend_key)
         return backend.load(name)

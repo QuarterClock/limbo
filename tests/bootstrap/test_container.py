@@ -3,22 +3,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING
 
 from limbo_core.application.interfaces.persistence import (
     PersistenceWriteBackend,
 )
 from limbo_core.bootstrap import Container, get_container
 
+if TYPE_CHECKING:
+    from limbo_core.domain.value_objects import TabularBatch
+
 
 @dataclass(slots=True)
 class _StubWriteBackend(PersistenceWriteBackend):
-    store: dict[str, Any] = field(default_factory=dict)
+    store: dict[str, TabularBatch] = field(default_factory=dict)
 
-    def save(self, name: str, data: Any) -> None:
+    def save(self, name: str, data: TabularBatch) -> None:
         self.store[name] = data
 
-    def load(self, name: str) -> Any:
+    def load(self, name: str) -> TabularBatch:
         return self.store[name]
 
     def exists(self, name: str) -> bool:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 import pytest
 
@@ -14,6 +13,7 @@ from limbo_core.application.interfaces.persistence import (
     PersistenceWriteBackend,
 )
 from limbo_core.domain.entities.backends import DestinationBackendSpec
+from limbo_core.domain.value_objects import TabularBatch
 from limbo_core.validation import ValidationError
 
 
@@ -21,12 +21,12 @@ from limbo_core.validation import ValidationError
 class _MemoryWriteBackend(PersistenceWriteBackend):
     """In-memory persistence backend used for tests."""
 
-    store: dict[str, Any] = field(default_factory=dict)
+    store: dict[str, TabularBatch] = field(default_factory=dict)
 
-    def save(self, name: str, data: Any) -> None:
+    def save(self, name: str, data: TabularBatch) -> None:
         self.store[name] = data
 
-    def load(self, name: str) -> Any:
+    def load(self, name: str) -> TabularBatch:
         return self.store[name]
 
     def exists(self, name: str) -> bool:
@@ -44,7 +44,7 @@ def test_persistence_write_registry_save_load_exists_cleanup_roundtrip() -> (
     registry.register("memory", _MemoryWriteBackend)
     registry.configure(DestinationBackendSpec(name="mem", type="memory"))
 
-    payload = {"id": 1}
+    payload = TabularBatch(column_names=("id",), rows=({"id": 1},))
     registry.save("mem", "users", payload)
     assert registry.exists("mem", "users")
     assert registry.load("mem", "users") == payload
@@ -56,9 +56,10 @@ def test_persistence_write_registry_save_load_exists_cleanup_roundtrip() -> (
 def test_persistence_write_registry_unknown_backend_raises() -> None:
     """Using an unknown backend key results in a validation error."""
     registry = PersistenceWriteRegistry()
+    batch = TabularBatch(column_names=("x",), rows=())
 
     with pytest.raises(
         ValidationError,
         match="Persistence write backend 'missing' is not configured",
     ):
-        registry.save("missing", "name", 1)
+        registry.save("missing", "name", batch)

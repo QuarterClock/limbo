@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from limbo_core.domain.value_objects import TabularBatch
 
 
 class PersistenceWriteBackend(ABC):
     """Write and manage persisted resources in a backend."""
 
     @abstractmethod
-    def save(self, name: str, data: Any) -> None:
+    def save(self, name: str, data: TabularBatch) -> None:
         """Write data to storage under the given name."""
 
     @abstractmethod
-    def load(self, name: str) -> Any:
+    def load(self, name: str) -> TabularBatch:
         """Load previously saved data by name."""
 
     @abstractmethod

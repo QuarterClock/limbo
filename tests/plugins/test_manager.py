@@ -31,6 +31,7 @@ from limbo_core.plugins import PluginManager, hookimpl
 
 if TYPE_CHECKING:
     from limbo_core.domain.entities import ConnectionBackendSpec
+    from limbo_core.domain.value_objects import TabularBatch
 
 
 class PluginTestConnectionBackend(ConnectionBackend):
@@ -111,17 +112,20 @@ class _MockPathBackend(PersistenceReadBackend):
 
 
 class _DummyPersistenceWriteBackend(PersistenceWriteBackend):
-    def save(self, name: str, data: object) -> None:
-        self._saved = (name, data)
+    def __init__(self, **_kwargs: object) -> None:
+        self._store: dict[str, TabularBatch] = {}
 
-    def load(self, name: str) -> object:
-        return getattr(self, "_saved", (None, None))
+    def save(self, name: str, data: TabularBatch) -> None:
+        self._store[name] = data
+
+    def load(self, name: str) -> TabularBatch:
+        return self._store[name]
 
     def exists(self, name: str) -> bool:
-        return hasattr(self, "_saved")
+        return name in self._store
 
     def cleanup(self, name: str) -> None:
-        self._saved = None
+        self._store.pop(name, None)
 
 
 class _DummyGenerator(Generator):

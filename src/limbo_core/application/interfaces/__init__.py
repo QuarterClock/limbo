@@ -14,6 +14,7 @@ from .generators import (
     generates,
 )
 from .persistence import (
+    CellValue,
     PersistenceReadBackend,
     PersistenceReadRegistryPort,
     PersistenceReadResolverPort,
@@ -21,6 +22,7 @@ from .persistence import (
     PersistenceWriteRegistryPort,
     PersistenceWriteResolverPort,
     Persistor,
+    TabularBatch,
 )
 from .plugin_loader import PluginLoader
 from .reference_resolver import ReferenceResolver
@@ -33,6 +35,7 @@ from .value_reader import (
 __all__ = [
     "BackendRegistration",
     "BaseRegistryPort",
+    "CellValue",
     "ConnectionBackend",
     "ConnectionProviderPort",
     "ConnectionRegistryPort",
@@ -48,6 +51,7 @@ __all__ = [
     "Persistor",
     "PluginLoader",
     "ReferenceResolver",
+    "TabularBatch",
     "ValueReaderBackend",
     "ValueReaderRegistryPort",
     "ValueResolverPort",
