@@ -10,14 +10,12 @@ import pytest
 from limbo_core.adapters.persistence import (
     DataPersistenceRegistry,
     DefaultPersistor,
+    PathResolverRegistry,
 )
 from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.domain.entities.backends import DestinationBackendSpec
-from limbo_core.domain.value_objects import (
-    LocalFilesystemStorageRef,
-    ResolvedStorageRef,
-    TabularBatch,
-)
+from limbo_core.domain.value_objects import ResolvedStorageRef, TabularBatch
+from limbo_core.plugins.builtin.persistence import FilesystemPathResolver
 
 
 def _batch_id(value: int) -> TabularBatch:
@@ -31,11 +29,12 @@ class _MemoryWriteBackend(DataPersistenceBackend):
     store: dict[str, TabularBatch] = field(default_factory=dict)
     _root: Path = field(default_factory=lambda: Path("/__limbo_memory__"))
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        p = self._root / name
-        return LocalFilesystemStorageRef(
-            backend="memory", uri=f"memory://{name}", local_path=p
-        )
+    @property
+    def directory(self) -> Path:
+        return self._root
+
+    def storage_object_name(self, logical_name: str) -> str:
+        return logical_name
 
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
         key = ref.as_local_path().name
@@ -54,7 +53,9 @@ class _MemoryWriteBackend(DataPersistenceBackend):
 @pytest.fixture
 def data_registry() -> DataPersistenceRegistry:
     """Registry with an in-memory backend configured."""
-    registry = DataPersistenceRegistry()
+    path_reg = PathResolverRegistry()
+    path_reg.register("file", FilesystemPathResolver)
+    registry = DataPersistenceRegistry(path_resolver_registry=path_reg)
     registry.register("memory", _MemoryWriteBackend)
     registry.configure(DestinationBackendSpec(name="memory", type="memory"))
     return registry

@@ -7,8 +7,7 @@ from pathlib import Path
 
 from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.bootstrap import Container, get_container
-from limbo_core.domain.value_objects import (
-    LocalFilesystemStorageRef,
+from limbo_core.domain.value_objects import (  # noqa: TC001
     ResolvedStorageRef,
     TabularBatch,
 )
@@ -19,12 +18,12 @@ class _StubWriteBackend(DataPersistenceBackend):
     store: dict[str, TabularBatch] = field(default_factory=dict)
     _root: Path = field(default_factory=lambda: Path("/__limbo_stub__"))
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        return LocalFilesystemStorageRef(
-            backend="memory",
-            uri=f"memory://{name}",
-            local_path=self._root / name,
-        )
+    @property
+    def directory(self) -> Path:
+        return self._root
+
+    def storage_object_name(self, logical_name: str) -> str:
+        return logical_name
 
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
         self.store[ref.as_local_path().name] = data

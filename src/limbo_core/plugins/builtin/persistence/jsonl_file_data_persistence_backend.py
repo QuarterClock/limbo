@@ -9,7 +9,6 @@ from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.domain.validation import ValidationError
 from limbo_core.domain.value_objects import (
     CellValue,
-    LocalFilesystemStorageRef,
     ResolvedStorageRef,
     TabularBatch,
 )
@@ -18,7 +17,6 @@ from .tabular_file_utils import (
     cell_from_json_value,
     cell_to_json_value,
     dump_json_bytes,
-    ensure_parent_dir,
     load_json_document_from_bytes,
     safe_filename_stem,
     tabular_batch_from_json_document,
@@ -41,26 +39,20 @@ class JsonlFileDataPersistenceBackend(DataPersistenceBackend):
         """Coerce ``directory`` to a Path."""
         self.directory = Path(self.directory)
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        """Return a ref for ``name`` under this backend's directory."""
-        path = Path(self.directory) / f"{safe_filename_stem(name)}.jsonl"
-        return LocalFilesystemStorageRef(
-            backend="file", uri=str(path), local_path=path
-        )
+    def storage_object_name(self, logical_name: str) -> str:
+        """Return filename including ``.jsonl`` suffix."""
+        return f"{safe_filename_stem(logical_name)}.jsonl"
 
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
         """Serialize ``data`` to the JSONL file for ``ref``."""
-        path = ref.as_local_path()
-        ensure_parent_dir(path)
-        if not data.rows:
-            payload = dump_json_bytes(tabular_batch_to_json_document(data))
-            path.write_bytes(payload + b"\n")
-            return
-        parts: list[bytes] = []
-        for row in data.rows:
-            doc = {k: cell_to_json_value(row[k]) for k in data.column_names}
-            parts.append(dump_json_bytes(doc) + b"\n")
-        path.write_bytes(b"".join(parts))
+        with ref.open_binary("wb") as out:
+            if not data.rows:
+                payload = dump_json_bytes(tabular_batch_to_json_document(data))
+                out.write(payload + b"\n")
+                return
+            for row in data.rows:
+                doc = {k: cell_to_json_value(row[k]) for k in data.column_names}
+                out.write(dump_json_bytes(doc) + b"\n")
 
     def load(self, ref: ResolvedStorageRef) -> TabularBatch:
         """Load a tabular batch from the JSONL file for ``ref``.
@@ -72,11 +64,14 @@ class JsonlFileDataPersistenceBackend(DataPersistenceBackend):
             FileNotFoundError: If the file is missing.
             ValidationError: If the file is empty or rows are inconsistent.
         """
-        path = ref.as_local_path()
-        if not path.is_file():
-            raise FileNotFoundError(path)
-        raw = path.read_bytes()
-        lines = [ln for ln in raw.splitlines() if ln.strip()]
+        if not ref.exists():
+            raise FileNotFoundError(ref.uri)
+        lines: list[bytes] = []
+        with ref.open_binary("rb") as inp:
+            for ln in inp:
+                s = ln.strip()
+                if s:
+                    lines.append(s)
         if not lines:
             raise ValidationError("JSONL file is empty")
         first = load_json_document_from_bytes(lines[0])

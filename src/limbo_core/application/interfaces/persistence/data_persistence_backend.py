@@ -13,8 +13,8 @@ class DataPersistenceBackend(ABC):
     """Serialize and deserialize TabularBatch through resolved storage refs."""
 
     @abstractmethod
-    def ref_for_name(self, name: str) -> ResolvedStorageRef:
-        """Build the storage ref for a logical artifact name."""
+    def storage_object_name(self, logical_name: str) -> str:
+        """Return storage id for the artifact (e.g. filename with suffix)."""
 
     @abstractmethod
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:

@@ -7,17 +7,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from limbo_core.application.interfaces.persistence import DataPersistenceBackend
-from limbo_core.domain.value_objects import (
-    LocalFilesystemStorageRef,
-    ResolvedStorageRef,
-)
 
 if TYPE_CHECKING:
-    from limbo_core.domain.value_objects import TabularBatch
+    from limbo_core.domain.value_objects import ResolvedStorageRef, TabularBatch
 
 from .tabular_file_utils import (
     dump_json_bytes,
-    ensure_parent_dir,
     load_json_document_from_bytes,
     safe_filename_stem,
     tabular_batch_from_json_document,
@@ -36,19 +31,16 @@ class JsonFileDataPersistenceBackend(DataPersistenceBackend):
         """Coerce ``directory`` to a Path."""
         self.directory = Path(self.directory)
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        """Return a ref for ``name`` under this backend's directory."""
-        path = Path(self.directory) / f"{safe_filename_stem(name)}.json"
-        return LocalFilesystemStorageRef(
-            backend="file", uri=str(path), local_path=path
-        )
+    def storage_object_name(self, logical_name: str) -> str:
+        """Return filename including ``.json`` suffix."""
+        return f"{safe_filename_stem(logical_name)}.json"
 
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
         """Serialize ``data`` to the JSON file for ``ref``."""
-        path = ref.as_local_path()
-        ensure_parent_dir(path)
         doc = tabular_batch_to_json_document(data)
-        path.write_bytes(dump_json_bytes(doc))
+        payload = dump_json_bytes(doc)
+        with ref.open_binary("wb") as out:
+            out.write(payload)
 
     def load(self, ref: ResolvedStorageRef) -> TabularBatch:
         """Load a tabular batch from the JSON file for ``ref``.
@@ -59,10 +51,11 @@ class JsonFileDataPersistenceBackend(DataPersistenceBackend):
         Raises:
             FileNotFoundError: If the file is missing.
         """
-        path = ref.as_local_path()
-        if not path.is_file():
-            raise FileNotFoundError(path)
-        doc = load_json_document_from_bytes(path.read_bytes())
+        if not ref.exists():
+            raise FileNotFoundError(ref.uri)
+        with ref.open_binary("rb") as inp:
+            raw = inp.read()
+        doc = load_json_document_from_bytes(raw)
         return tabular_batch_from_json_document(doc)
 
     def exists(self, ref: ResolvedStorageRef) -> bool:

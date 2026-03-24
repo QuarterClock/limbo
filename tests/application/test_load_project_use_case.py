@@ -133,7 +133,9 @@ def loader(
                 connection_registry=connection_registry,
                 value_reader_registry=value_reader_registry,
                 path_resolver_registry=path_registry,
-                data_persistence_registry=DataPersistenceRegistry(),
+                data_persistence_registry=DataPersistenceRegistry(
+                    path_resolver_registry=path_registry
+                ),
                 generator_registry=GeneratorRegistry(),
             )
         ),

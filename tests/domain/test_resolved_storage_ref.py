@@ -60,3 +60,33 @@ def test_uri_and_metadata_properties() -> None:
     assert ref.backend == "s3"
     assert ref.uri == "s3://b/k"
     assert ref.metadata == {"region": "eu"}
+
+
+def test_read_write_bytes_round_trip(tmp_path: Path) -> None:
+    p = tmp_path / "sub" / "f.bin"
+    ref = _ref(local_path=p, uri=str(p))
+    ref.write_bytes(b"hello")
+    assert ref.read_bytes() == b"hello"
+    assert ref.exists()
+
+
+def test_open_text_write_read(tmp_path: Path) -> None:
+    p = tmp_path / "t.txt"
+    ref = _ref(local_path=p, uri=str(p))
+    with ref.open_text("w", encoding="utf-8", newline="") as fh:
+        fh.write("line1\n")
+    with ref.open_text("r", encoding="utf-8", newline="") as fh:
+        assert fh.read() == "line1\n"
+
+
+def test_open_binary_write_read_append(tmp_path: Path) -> None:
+    p = tmp_path / "b.bin"
+    ref = _ref(local_path=p, uri=str(p))
+    with ref.open_binary("wb") as out:
+        out.write(b"ab")
+    with ref.open_binary("rb") as inp:
+        assert inp.read() == b"ab"
+    with ref.open_binary("ab") as out:
+        out.write(b"c")
+    with ref.open_binary("rb") as inp:
+        assert inp.read() == b"abc"

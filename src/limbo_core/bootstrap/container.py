@@ -38,9 +38,7 @@ class Container:
     path_resolver_registry: PathResolverRegistry = field(
         default_factory=PathResolverRegistry
     )
-    data_persistence_registry: DataPersistenceRegistry = field(
-        default_factory=DataPersistenceRegistry
-    )
+    data_persistence_registry: DataPersistenceRegistry = field(init=False)
     generator_registry: GeneratorRegistry = field(
         default_factory=GeneratorRegistry
     )
@@ -52,6 +50,9 @@ class Container:
 
     def __post_init__(self) -> None:
         """Instantiate services after dependencies are available."""
+        self.data_persistence_registry = DataPersistenceRegistry(
+            path_resolver_registry=self.path_resolver_registry
+        )
         self.plugin_manager = PluginManager(
             connection_registry=self.connection_registry,
             value_reader_registry=self.value_reader_registry,

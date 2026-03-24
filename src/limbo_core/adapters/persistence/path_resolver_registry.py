@@ -20,6 +20,7 @@ from .errors import UnknownPathBackendError
 
 if TYPE_CHECKING:
     from limbo_core.application.context import ResolutionContext
+    from limbo_core.domain.entities.resources.path_spec import PathSpec
     from limbo_core.domain.value_objects import ResolvedStorageRef
 
 
@@ -46,7 +47,34 @@ class PathResolverRegistry(
             backend = self.create(path_spec.backend)
         aliases = context.build_alias_map() if context is not None else {}
         base = self._resolve_base_alias(path_spec.base, aliases=aliases)
-        return backend.resolve(path_spec, base=base)
+        return backend.resolve(path_spec, base=base, allow_missing=False)
+
+    def resolve_spec(
+        self,
+        path_spec: PathSpec,
+        *,
+        base: Any | None = None,
+        context: ResolutionContext | None = None,
+        allow_missing: bool = False,
+    ) -> ResolvedStorageRef:
+        """Resolve a structured path spec to a storage reference.
+
+        Returns:
+            A ``ResolvedStorageRef`` for the resolved location.
+        """
+        backend_name = self._normalize_name(path_spec.backend)
+        backend = self._instances.get(backend_name)
+        if backend is None:
+            backend = self.create(path_spec.backend)
+        if path_spec.base is not None and context is not None:
+            resolved_base = self._resolve_base_alias(
+                path_spec.base, aliases=context.build_alias_map()
+            )
+        else:
+            resolved_base = base
+        return backend.resolve(
+            path_spec, base=resolved_base, allow_missing=allow_missing
+        )
 
     @staticmethod
     def _resolve_base_alias(

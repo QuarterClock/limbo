@@ -113,7 +113,11 @@ class _StaticReader(ValueReaderBackend):
 
 class _MockPathResolver(PathResolverBackend):
     def resolve(
-        self, path_spec: PathSpec, *, base: object | None = None
+        self,
+        path_spec: PathSpec,
+        *,
+        base: object | None = None,
+        allow_missing: bool = False,
     ) -> LocalFilesystemStorageRef:
         return LocalFilesystemStorageRef(
             backend="mock",
@@ -127,12 +131,12 @@ class _DummyDataPersistenceBackend(DataPersistenceBackend):
         self._store: dict[str, TabularBatch] = {}
         self._root = Path("/__limbo_memory__")
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        return LocalFilesystemStorageRef(
-            backend="memory",
-            uri=f"memory://{name}",
-            local_path=self._root / name,
-        )
+    @property
+    def directory(self) -> Path:
+        return self._root
+
+    def storage_object_name(self, logical_name: str) -> str:
+        return logical_name
 
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
         self._store[ref.as_local_path().name] = data
@@ -204,7 +208,9 @@ def fresh_plugin_manager(
         connection_registry=connection_registry,
         value_reader_registry=value_reader_registry,
         path_resolver_registry=path_resolver_registry,
-        data_persistence_registry=DataPersistenceRegistry(),
+        data_persistence_registry=DataPersistenceRegistry(
+            path_resolver_registry=path_resolver_registry
+        ),
         generator_registry=GeneratorRegistry(),
     )
 
@@ -220,18 +226,24 @@ class TestPluginManagerInitialization:
 
     def test_managers_are_independent(self) -> None:
         """Separate manager instances maintain separate plugin state."""
+        pr1 = PathResolverRegistry()
+        pr2 = PathResolverRegistry()
         first = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_resolver_registry=PathResolverRegistry(),
-            data_persistence_registry=DataPersistenceRegistry(),
+            path_resolver_registry=pr1,
+            data_persistence_registry=DataPersistenceRegistry(
+                path_resolver_registry=pr1
+            ),
             generator_registry=GeneratorRegistry(),
         )
         second = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_resolver_registry=PathResolverRegistry(),
-            data_persistence_registry=DataPersistenceRegistry(),
+            path_resolver_registry=pr2,
+            data_persistence_registry=DataPersistenceRegistry(
+                path_resolver_registry=pr2
+            ),
             generator_registry=GeneratorRegistry(),
         )
         first.register(SamplePlugin(), name="first")
@@ -349,11 +361,14 @@ class TestPluginManagerLoadPlugins:
     def test_register_value_readers_hook(self) -> None:
         """Value-reader hook populates the value reader registry."""
         value_reader_registry = ValueReaderRegistry()
+        path_reg = PathResolverRegistry()
         manager = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=value_reader_registry,
-            path_resolver_registry=PathResolverRegistry(),
-            data_persistence_registry=DataPersistenceRegistry(),
+            path_resolver_registry=path_reg,
+            data_persistence_registry=DataPersistenceRegistry(
+                path_resolver_registry=path_reg
+            ),
             generator_registry=GeneratorRegistry(),
         )
         manager.register(ReaderPlugin(), name="reader_plugin")
@@ -368,7 +383,9 @@ class TestPluginManagerLoadPlugins:
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
             path_resolver_registry=path_resolver_registry,
-            data_persistence_registry=DataPersistenceRegistry(),
+            data_persistence_registry=DataPersistenceRegistry(
+                path_resolver_registry=path_resolver_registry
+            ),
             generator_registry=GeneratorRegistry(),
         )
         manager.register(PathPlugin(), name="path_plugin")
@@ -380,11 +397,14 @@ class TestPluginManagerLoadPlugins:
 
     def test_register_data_persistence_backends_hook(self) -> None:
         """Data-persistence hook populates data persistence registry."""
+        path_reg = PathResolverRegistry()
         manager = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_resolver_registry=PathResolverRegistry(),
-            data_persistence_registry=DataPersistenceRegistry(),
+            path_resolver_registry=path_reg,
+            data_persistence_registry=DataPersistenceRegistry(
+                path_resolver_registry=path_reg
+            ),
             generator_registry=GeneratorRegistry(),
         )
         manager.register(SamplePlugin(), name="sample")
@@ -395,11 +415,14 @@ class TestPluginManagerLoadPlugins:
 
     def test_register_generators_hook(self) -> None:
         """Generator hook populates generator registry."""
+        path_reg = PathResolverRegistry()
         manager = PluginManager(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_resolver_registry=PathResolverRegistry(),
-            data_persistence_registry=DataPersistenceRegistry(),
+            path_resolver_registry=path_reg,
+            data_persistence_registry=DataPersistenceRegistry(
+                path_resolver_registry=path_reg
+            ),
             generator_registry=GeneratorRegistry(),
         )
         manager.register(SamplePlugin(), name="sample")

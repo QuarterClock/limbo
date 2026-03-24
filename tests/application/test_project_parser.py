@@ -26,10 +26,7 @@ from limbo_core.domain.entities import (
     LookupValue,
     TableRelationship,
 )
-from limbo_core.domain.value_objects import (
-    LocalFilesystemStorageRef,
-    ResolvedStorageRef,
-)
+from limbo_core.domain.value_objects import ResolvedStorageRef  # noqa: TC001
 from limbo_core.errors import LimboValidationError
 from limbo_core.plugins.builtin.connections import SQLAlchemyConnectionBackend
 from limbo_core.plugins.builtin.persistence import FilesystemPathResolver
@@ -46,12 +43,12 @@ class _StubWriteBackend(DataPersistenceBackend):
     store: dict[str, TabularBatch] = field(default_factory=dict)
     _root: Path = field(default_factory=lambda: Path("/__limbo_stub__"))
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        return LocalFilesystemStorageRef(
-            backend="memory",
-            uri=f"memory://{name}",
-            local_path=self._root / name,
-        )
+    @property
+    def directory(self) -> Path:
+        return self._root
+
+    def storage_object_name(self, logical_name: str) -> str:
+        return logical_name
 
     def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
         self.store[ref.as_local_path().name] = data
@@ -637,7 +634,9 @@ class TestParseDestinationBindings:
     @pytest.fixture
     def parser_with_data_registry(self) -> ProjectParser:
         """Parser with data persistence registry pre-loaded."""
-        data_registry = DataPersistenceRegistry()
+        path_reg = PathResolverRegistry()
+        path_reg.register("file", FilesystemPathResolver)
+        data_registry = DataPersistenceRegistry(path_resolver_registry=path_reg)
         data_registry.register("memory", _StubWriteBackend)
         return ProjectParser(
             connection_registry=ConnectionRegistry(),
@@ -678,7 +677,9 @@ class TestParseDestinationBindings:
 
     def test_resets_destination_bindings_between_calls(self) -> None:
         """Destination bindings do not leak across parse calls."""
-        data_registry = DataPersistenceRegistry()
+        path_reg = PathResolverRegistry()
+        path_reg.register("file", FilesystemPathResolver)
+        data_registry = DataPersistenceRegistry(path_resolver_registry=path_reg)
         data_registry.register("memory", _StubWriteBackend)
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),
@@ -817,7 +818,9 @@ class TestConfigureBackendFailures:
         assert err.value.path == ("connections", 0)
 
     def test_destination_configure_limbo_wrapped(self) -> None:
-        data_reg = DataPersistenceRegistry()
+        path_reg = PathResolverRegistry()
+        path_reg.register("file", FilesystemPathResolver)
+        data_reg = DataPersistenceRegistry(path_resolver_registry=path_reg)
         data_reg.register("memory", _StubWriteBackend)
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),

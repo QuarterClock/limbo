@@ -11,13 +11,11 @@ from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.domain.validation import ValidationError
 from limbo_core.domain.value_objects import (
     CellValue,
-    LocalFilesystemStorageRef,
     ResolvedStorageRef,
     TabularBatch,
 )
 
 from .tabular_file_utils import (
-    ensure_parent_dir,
     normalize_arrow_scalar,
     safe_filename_stem,
     try_import_pyarrow,
@@ -43,12 +41,9 @@ class CsvFileDataPersistenceBackend(DataPersistenceBackend):
         self.directory = Path(self.directory)
         self.csv_engine = self.csv_engine.strip().lower()
 
-    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
-        """Return a ref for ``name`` under this backend's directory."""
-        path = Path(self.directory) / f"{safe_filename_stem(name)}.csv"
-        return LocalFilesystemStorageRef(
-            backend="file", uri=str(path), local_path=path
-        )
+    def storage_object_name(self, logical_name: str) -> str:
+        """Return filename including ``.csv`` suffix."""
+        return f"{safe_filename_stem(logical_name)}.csv"
 
     @staticmethod
     def _cell_as_text(value: CellValue) -> str:
@@ -68,22 +63,21 @@ class CsvFileDataPersistenceBackend(DataPersistenceBackend):
         Raises:
             ValidationError: If ``csv_engine`` is not ``stdlib`` or ``pyarrow``.
         """
-        path = ref.as_local_path()
-        ensure_parent_dir(path)
         if self.csv_engine == "pyarrow":
             pa = try_import_pyarrow()
             import pyarrow.csv as pacsv
 
             cols = {c: [row[c] for row in data.rows] for c in data.column_names}
             table = pa.Table.from_pydict(cols)
-            pacsv.write_csv(table, str(path))
+            with ref.open_binary("wb") as out:
+                pacsv.write_csv(table, out)
             return
         if self.csv_engine != "stdlib":
             raise ValidationError(
                 "csv_engine must be 'stdlib' or 'pyarrow', "
                 f"got {self.csv_engine!r}"
             )
-        with path.open("w", newline="", encoding=self.encoding) as fh:
+        with ref.open_text("w", encoding=self.encoding, newline="") as fh:
             writer = csv.DictWriter(
                 fh, fieldnames=list(data.column_names), extrasaction="raise"
             )
@@ -103,14 +97,14 @@ class CsvFileDataPersistenceBackend(DataPersistenceBackend):
             FileNotFoundError: If the file is missing.
             ValidationError: If the CSV has no header row.
         """
-        path = ref.as_local_path()
-        if not path.is_file():
-            raise FileNotFoundError(path)
+        if not ref.exists():
+            raise FileNotFoundError(ref.uri)
         if self.csv_engine == "pyarrow":
             try_import_pyarrow()
             import pyarrow.csv as pacsv
 
-            table = pacsv.read_csv(str(path))
+            with ref.open_binary("rb") as inp:
+                table = pacsv.read_csv(inp)
             column_names = tuple(str(c) for c in table.column_names)
             rows_py = table.to_pylist()
             normalized = [
@@ -120,7 +114,7 @@ class CsvFileDataPersistenceBackend(DataPersistenceBackend):
             return TabularBatch(
                 column_names=column_names, rows=tuple(normalized)
             )
-        with path.open(encoding=self.encoding) as fh:
+        with ref.open_text("r", encoding=self.encoding, newline="") as fh:
             reader = csv.DictReader(fh)
             if reader.fieldnames is None:
                 raise ValidationError("CSV has no header row")

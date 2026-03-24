@@ -40,7 +40,11 @@ class _SpyBackend(PathResolverBackend):
     last_base: object | None = None
 
     def resolve(
-        self, path_spec: PathSpec, *, base: object | None = None
+        self,
+        path_spec: PathSpec,
+        *,
+        base: object | None = None,
+        allow_missing: bool = False,
     ) -> LocalFilesystemStorageRef:
         type(self).last_path_spec = path_spec
         type(self).last_base = base
@@ -300,6 +304,32 @@ class TestPathBackendRegistryResolve:
         instances = registry.get_instances()
         assert "archive" in instances
         assert isinstance(instances["archive"], _SpyBackend)
+
+    def test_resolve_spec_resolves_base_from_context_when_spec_has_base(
+        self, file_registry: PathResolverRegistry, tmp_path: Path
+    ) -> None:
+        """``path_spec.base`` comes from context, not the ``base`` parameter."""
+        ctx = ResolutionContext(source_dir=tmp_path)
+        spec = PathSpec(backend="file", location="nested/out.csv", base="this")
+        ref = file_registry.resolve_spec(
+            spec,
+            base=tmp_path / "should_not_be_used",
+            context=ctx,
+            allow_missing=True,
+        )
+        assert ref.as_local_path() == tmp_path / "nested" / "out.csv"
+
+    def test_resolve_spec_reuses_configured_backend_instance(
+        self, tmp_path: Path
+    ) -> None:
+        """Uses an existing named backend instance instead of ``create``."""
+        registry = PathResolverRegistry()
+        registry.register("file", FilesystemPathResolver)
+        registry.configure(PathBackendSpec(name="file", type="file"))
+        (tmp_path / "seed.csv").write_text("id\n1\n")
+        spec = PathSpec(backend="file", location="seed.csv", base=None)
+        ref = registry.resolve_spec(spec, base=tmp_path, allow_missing=False)
+        assert ref.as_local_path() == tmp_path / "seed.csv"
 
 
 class TestPathBackendRegistryErrors:

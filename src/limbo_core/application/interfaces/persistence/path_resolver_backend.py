@@ -15,7 +15,11 @@ class PathResolverBackend(ABC):
 
     @abstractmethod
     def resolve(
-        self, path_spec: PathSpec, *, base: Any | None = None
+        self,
+        path_spec: PathSpec,
+        *,
+        base: Any | None = None,
+        allow_missing: bool = False,
     ) -> ResolvedStorageRef:
         """Resolve one structured path spec to a storage reference.
 
@@ -24,4 +28,6 @@ class PathResolverBackend(ABC):
             base: Pre-resolved base value for relative path resolution.
                   The registry resolves the ``PathSpec.base`` alias before
                   calling this method; backends receive the concrete value.
+            allow_missing: When True and the path is relative, do not require
+                the target file to exist (for tabular outputs not yet written).
         """
