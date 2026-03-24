@@ -15,12 +15,12 @@ if TYPE_CHECKING:
         BackendRegistration,
         ConnectionBackend,
         ConnectionRegistryPort,
+        DataPersistenceBackend,
+        DataPersistenceRegistryPort,
         GeneratorRegistration,
         GeneratorRegistryPort,
-        PersistenceReadBackend,
-        PersistenceReadRegistryPort,
-        PersistenceWriteBackend,
-        PersistenceWriteRegistryPort,
+        PathResolverBackend,
+        PathResolverRegistryPort,
         ValueReaderBackend,
         ValueReaderRegistryPort,
     )
@@ -35,8 +35,8 @@ class PluginManager:
         self,
         connection_registry: ConnectionRegistryPort,
         value_reader_registry: ValueReaderRegistryPort,
-        path_backend_registry: PersistenceReadRegistryPort,
-        persistence_write_registry: PersistenceWriteRegistryPort,
+        path_resolver_registry: PathResolverRegistryPort,
+        data_persistence_registry: DataPersistenceRegistryPort,
         generator_registry: GeneratorRegistryPort,
     ) -> None:
         """Initialize plugin manager with explicit dependencies."""
@@ -44,8 +44,8 @@ class PluginManager:
         self._pm.add_hookspecs(LimboHookSpec)
         self._connection_registry = connection_registry
         self._value_reader_registry = value_reader_registry
-        self._path_backend_registry = path_backend_registry
-        self._persistence_write_registry = persistence_write_registry
+        self._path_resolver_registry = path_resolver_registry
+        self._data_persistence_registry = data_persistence_registry
         self._generator_registry = generator_registry
         self._plugins_loaded = False
         self._ensure_builtin_registered()
@@ -100,8 +100,8 @@ class PluginManager:
 
         self.load_setuptools_plugins()
         self._register_value_readers()
-        self._register_path_backends()
-        self._register_persistence_write_backends()
+        self._register_path_resolver_backends()
+        self._register_data_persistence_backends()
         self._register_generators()
         self._register_connections()
         self._plugins_loaded = True
@@ -151,25 +151,25 @@ class PluginManager:
                     registration.key, registration.backend_class
                 )
 
-    def _register_path_backends(self) -> None:
-        """Register persistence read backends contributed by plugins."""
-        results: list[list[BackendRegistration[PersistenceReadBackend]]] = (
-            self.hook.limbo_register_path_backends()
+    def _register_path_resolver_backends(self) -> None:
+        """Register path resolver backends contributed by plugins."""
+        results: list[list[BackendRegistration[PathResolverBackend]]] = (
+            self.hook.limbo_register_path_resolver_backends()
         )
         for registrations in results:
             for registration in registrations:
-                self._path_backend_registry.register(
+                self._path_resolver_registry.register(
                     registration.key, registration.backend_class
                 )
 
-    def _register_persistence_write_backends(self) -> None:
-        """Register persistence write backends contributed by plugins."""
-        results: list[list[BackendRegistration[PersistenceWriteBackend]]] = (
-            self.hook.limbo_register_persistence_write_backends()
+    def _register_data_persistence_backends(self) -> None:
+        """Register data persistence backends contributed by plugins."""
+        results: list[list[BackendRegistration[DataPersistenceBackend]]] = (
+            self.hook.limbo_register_data_persistence_backends()
         )
         for registrations in results:
             for registration in registrations:
-                self._persistence_write_registry.register(
+                self._data_persistence_registry.register(
                     registration.key, registration.backend_class
                 )
 

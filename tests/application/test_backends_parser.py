@@ -30,19 +30,19 @@ def test_parse_backend_spec_rejects_non_mapping() -> None:
         ValidationError,
         match="ValueReaderBackendSpec expects a mapping, got int",
     ):
-        parse_backend_spec(123, spec_cls=ValueReaderBackendSpec)  # type: ignore[arg-type]
+        parse_backend_spec(123, spec_cls=ValueReaderBackendSpec)
 
 
 def test_parse_value_reader_backends_wraps_validation_error() -> None:
     """_parse_value_reader_backends wraps ValidationError in ParseError."""
-    payload = [{"config": {}}]
+    payload: list[dict[str, object]] = [{"config": {}}]
     with pytest.raises(ParseError, match=r"value_readers\[0\]"):
         _parse_value_reader_backends(payload, path=("value_readers",))
 
 
 def test_parse_path_backends_wraps_validation_error() -> None:
     """_parse_path_backends wraps ValidationError in ParseError."""
-    payload = [{"config": {}}]
+    payload: list[dict[str, object]] = [{"config": {}}]
     with pytest.raises(ParseError, match=r"path_backends\[0\]"):
         _parse_path_backends(payload, path=("path_backends",))
 
@@ -71,7 +71,7 @@ class TestParseDestinations:
 
     def test_wraps_validation_error(self) -> None:
         """_parse_destinations wraps ValidationError in ParseError."""
-        payload = [{"config": {}}]
+        payload: list[dict[str, object]] = [{"config": {}}]
         with pytest.raises(ParseError, match=r"destinations\[0\]"):
             _parse_destinations(payload, path=("destinations",))
 

@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 
 import limbo_core.application.parsers.tables_parser as tables_parser_module
 from limbo_core.adapters.connections import ConnectionRegistry
 from limbo_core.adapters.persistence import (
-    PersistenceReadRegistry,
-    PersistenceWriteRegistry,
+    DataPersistenceRegistry,
+    PathResolverRegistry,
 )
 from limbo_core.adapters.value_reader import ValueReaderRegistry
-from limbo_core.application.interfaces.persistence import (
-    PersistenceWriteBackend,
-)
+from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.application.parsers import ParseError, ProjectParser
 from limbo_core.application.parsers.common import InvalidValueSpecError
 from limbo_core.domain.entities import (
@@ -26,7 +26,13 @@ from limbo_core.domain.entities import (
     LookupValue,
     TableRelationship,
 )
-from limbo_core.plugins.builtin.persistence import FilesystemReadBackend
+from limbo_core.domain.value_objects import (
+    LocalFilesystemStorageRef,
+    ResolvedStorageRef,
+)
+from limbo_core.errors import LimboValidationError
+from limbo_core.plugins.builtin.connections import SQLAlchemyConnectionBackend
+from limbo_core.plugins.builtin.persistence import FilesystemPathResolver
 from limbo_core.plugins.builtin.value_readers import OsEnvReader
 
 if TYPE_CHECKING:
@@ -34,22 +40,30 @@ if TYPE_CHECKING:
 
 
 @dataclass(slots=True)
-class _StubWriteBackend(PersistenceWriteBackend):
-    """Minimal write backend for parser tests."""
+class _StubWriteBackend(DataPersistenceBackend):
+    """Minimal data persistence backend for parser tests."""
 
     store: dict[str, TabularBatch] = field(default_factory=dict)
+    _root: Path = field(default_factory=lambda: Path("/__limbo_stub__"))
 
-    def save(self, name: str, data: TabularBatch) -> None:
-        self.store[name] = data
+    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
+        return LocalFilesystemStorageRef(
+            backend="memory",
+            uri=f"memory://{name}",
+            local_path=self._root / name,
+        )
 
-    def load(self, name: str) -> TabularBatch:
-        return self.store[name]
+    def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
+        self.store[ref.as_local_path().name] = data
 
-    def exists(self, name: str) -> bool:
-        return name in self.store
+    def load(self, ref: ResolvedStorageRef) -> TabularBatch:
+        return self.store[ref.as_local_path().name]
 
-    def cleanup(self, name: str) -> None:
-        self.store.pop(name, None)
+    def exists(self, ref: ResolvedStorageRef) -> bool:
+        return ref.as_local_path().name in self.store
+
+    def cleanup(self, ref: ResolvedStorageRef) -> None:
+        self.store.pop(ref.as_local_path().name, None)
 
 
 @pytest.fixture
@@ -122,7 +136,9 @@ class TestParseTableColumn:
         })
         assert column.generator == "pii.full_name"
         assert column.options is not None
-        assert column.options["length"].value == 5
+        length_opt = column.options["length"]
+        assert isinstance(length_opt, LiteralValue)
+        assert length_opt.value == 5
 
     def test_wraps_option_validation_error(
         self, project_parser: ProjectParser, monkeypatch: pytest.MonkeyPatch
@@ -530,10 +546,10 @@ class TestParseProjectValidation:
             ],
             "config": {},
         }
-        payload["tables"] = [  # type: ignore[assignment]
-            payload["tables"][0],  # type: ignore[index]
-            second_table,
-        ]
+        tables = payload["tables"]
+        assert isinstance(tables, list)
+        first_table = tables[0]
+        payload["tables"] = [first_table, second_table]
         project = project_parser.parse(payload)
         assert len(project.tables) == 2
         assert project.tables[0].name == "users"
@@ -550,13 +566,14 @@ class TestParseBackendBindings:
 
     def test_applies_bindings(self) -> None:
         """Parser configures named backend bindings."""
+        path_reg = PathResolverRegistry()
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_backend_registry=PersistenceReadRegistry(),
+            path_resolver_registry=path_reg,
         )
         parser.value_reader_registry.register("env", OsEnvReader)
-        parser.path_backend_registry.register("file", FilesystemReadBackend)
+        path_reg.register("file", FilesystemPathResolver)
         payload = _minimal_project_payload()
         payload["value_readers"] = [{"name": "runtime_env", "type": "env"}]
         payload["path_backends"] = [{"name": "localfs", "type": "file"}]
@@ -566,7 +583,7 @@ class TestParseBackendBindings:
         assert project.value_readers[0].name == "runtime_env"
         assert project.path_backends[0].name == "localfs"
         vr_inst = parser.value_reader_registry.get_instances()
-        pb_inst = parser.path_backend_registry.get_instances()
+        pb_inst = path_reg.get_instances()
         assert "runtime_env" in vr_inst
         assert "localfs" in pb_inst
 
@@ -587,25 +604,26 @@ class TestParseBackendBindings:
 
     def test_resets_bindings_between_calls(self) -> None:
         """Project-scoped bindings do not leak across parse calls."""
+        path_reg = PathResolverRegistry()
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            path_backend_registry=PersistenceReadRegistry(),
+            path_resolver_registry=path_reg,
         )
         parser.value_reader_registry.register("env", OsEnvReader)
-        parser.path_backend_registry.register("file", FilesystemReadBackend)
+        path_reg.register("file", FilesystemPathResolver)
         payload = _minimal_project_payload()
         payload["value_readers"] = [{"name": "runtime_env", "type": "env"}]
         payload["path_backends"] = [{"name": "localfs", "type": "file"}]
         parser.parse(payload)
         vr_inst = parser.value_reader_registry.get_instances()
-        pb_inst = parser.path_backend_registry.get_instances()
+        pb_inst = path_reg.get_instances()
         assert "runtime_env" in vr_inst
         assert "localfs" in pb_inst
 
         parser.parse(_minimal_project_payload())
         assert parser.value_reader_registry.get_instances() == {}
-        assert parser.path_backend_registry.get_instances() == {}
+        assert path_reg.get_instances() == {}
 
 
 # -------------------------------------------------------------------
@@ -617,35 +635,35 @@ class TestParseDestinationBindings:
     """Tests for project-level destination (write backend) binding parsing."""
 
     @pytest.fixture
-    def parser_with_write_registry(self) -> ProjectParser:
-        """Parser with both read and write registries pre-loaded."""
-        write_registry = PersistenceWriteRegistry()
-        write_registry.register("memory", _StubWriteBackend)
+    def parser_with_data_registry(self) -> ProjectParser:
+        """Parser with data persistence registry pre-loaded."""
+        data_registry = DataPersistenceRegistry()
+        data_registry.register("memory", _StubWriteBackend)
         return ProjectParser(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            destination_registry=write_registry,
+            data_persistence_registry=data_registry,
         )
 
     def test_applies_destination_bindings(
-        self, parser_with_write_registry: ProjectParser
+        self, parser_with_data_registry: ProjectParser
     ) -> None:
         """Parser configures named destination backend bindings."""
         payload = _minimal_project_payload()
         payload["destinations"] = [{"name": "output", "type": "memory"}]
 
-        project = parser_with_write_registry.parse(payload)
+        project = parser_with_data_registry.parse(payload)
 
         assert len(project.destinations) == 1
         assert project.destinations[0].name == "output"
         assert project.destinations[0].type == "memory"
-        dest_inst = (
-            parser_with_write_registry.destination_registry.get_instances()
-        )
+        data_reg = parser_with_data_registry.data_persistence_registry
+        assert data_reg is not None
+        dest_inst = data_reg.get_instances()
         assert "output" in dest_inst
 
     def test_rejects_duplicate_destination_names(
-        self, parser_with_write_registry: ProjectParser
+        self, parser_with_data_registry: ProjectParser
     ) -> None:
         """Destination names must be unique."""
         payload = _minimal_project_payload()
@@ -656,28 +674,28 @@ class TestParseDestinationBindings:
         with pytest.raises(
             ParseError, match=r"destinations\[1\]\.name: duplicate backend name"
         ):
-            parser_with_write_registry.parse(payload)
+            parser_with_data_registry.parse(payload)
 
     def test_resets_destination_bindings_between_calls(self) -> None:
         """Destination bindings do not leak across parse calls."""
-        write_registry = PersistenceWriteRegistry()
-        write_registry.register("memory", _StubWriteBackend)
+        data_registry = DataPersistenceRegistry()
+        data_registry.register("memory", _StubWriteBackend)
         parser = ProjectParser(
             connection_registry=ConnectionRegistry(),
             value_reader_registry=ValueReaderRegistry(),
-            destination_registry=write_registry,
+            data_persistence_registry=data_registry,
         )
         payload = _minimal_project_payload()
         payload["destinations"] = [{"name": "output", "type": "memory"}]
         parser.parse(payload)
-        assert "output" in write_registry.get_instances()
+        assert "output" in data_registry.get_instances()
 
         reset_payload = _minimal_project_payload()
         reset_payload["destinations"] = [{"name": "other", "type": "memory"}]
         parser.parse(reset_payload)
-        assert "output" not in write_registry.get_instances()
+        assert "output" not in data_registry.get_instances()
 
-    def test_skips_configuration_when_no_write_registry(
+    def test_skips_configuration_when_no_data_registry(
         self, project_parser: ProjectParser
     ) -> None:
         """Destinations are parsed but not configured when no registry."""
@@ -687,3 +705,134 @@ class TestParseDestinationBindings:
 
         assert len(project.destinations) == 1
         assert project.destinations[0].name == "output"
+
+
+class TestParseNullCollections:
+    """Explicit JSON null for list sections."""
+
+    def test_null_sources_becomes_empty(
+        self, project_parser: ProjectParser
+    ) -> None:
+        payload = _minimal_project_payload()
+        payload["sources"] = None
+        project = project_parser.parse(payload)
+        assert project.sources == []
+
+    def test_null_seeds_becomes_empty(
+        self, project_parser: ProjectParser
+    ) -> None:
+        payload = _minimal_project_payload()
+        payload["seeds"] = None
+        project = project_parser.parse(payload)
+        assert project.seeds == []
+
+
+class BoomConfigureConnectionRegistry(ConnectionRegistry):
+    """``configure`` raises for testing ``ProjectParser`` error wrapping."""
+
+    def configure(self, spec: object) -> None:
+        raise ValueError("connection configure boom")
+
+
+class TestConfigureBackendFailures:
+    """Registry ``configure`` failures are wrapped as ``ParseError``."""
+
+    def test_path_backend_configure_value_error_wrapped(self) -> None:
+        path_reg = PathResolverRegistry()
+        path_reg.register("file", FilesystemPathResolver)
+        parser = ProjectParser(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            path_resolver_registry=path_reg,
+        )
+        payload = _minimal_project_payload()
+        payload["seeds"] = []
+        payload["sources"] = []
+        payload["path_backends"] = [{"name": "pb", "type": "file"}]
+        with (
+            patch.object(
+                path_reg, "configure", side_effect=ValueError("path fail")
+            ),
+            pytest.raises(ParseError, match="path fail") as err,
+        ):
+            parser.parse(payload)
+        assert err.value.path == ("path_backends", 0)
+
+    def test_connection_configure_value_error_wrapped(self) -> None:
+        conn_reg = BoomConfigureConnectionRegistry()
+        conn_reg.register("sqlalchemy", SQLAlchemyConnectionBackend)
+        parser = ProjectParser(
+            connection_registry=conn_reg,
+            value_reader_registry=ValueReaderRegistry(),
+        )
+        payload = _minimal_project_payload()
+        payload["seeds"] = []
+        payload["sources"] = []
+        payload["connections"] = [
+            {
+                "name": "main",
+                "type": "sqlalchemy",
+                "config": {
+                    "host": "",
+                    "user": "",
+                    "password": "",
+                    "database": ":memory:",
+                },
+            }
+        ]
+        with pytest.raises(
+            ParseError, match="connection configure boom"
+        ) as err:
+            parser.parse(payload)
+        assert err.value.path == ("connections", 0)
+
+    def test_connection_configure_limbo_validation_wrapped(self) -> None:
+        class _LimboConn(ConnectionRegistry):
+            def configure(self, spec: object) -> None:
+                raise LimboValidationError("conn limbo")
+
+        conn_reg = _LimboConn()
+        conn_reg.register("sqlalchemy", SQLAlchemyConnectionBackend)
+        parser = ProjectParser(
+            connection_registry=conn_reg,
+            value_reader_registry=ValueReaderRegistry(),
+        )
+        payload = _minimal_project_payload()
+        payload["seeds"] = []
+        payload["sources"] = []
+        payload["connections"] = [
+            {
+                "name": "main",
+                "type": "sqlalchemy",
+                "config": {
+                    "host": "",
+                    "user": "",
+                    "password": "",
+                    "database": ":memory:",
+                },
+            }
+        ]
+        with pytest.raises(ParseError, match="conn limbo") as err:
+            parser.parse(payload)
+        assert err.value.path == ("connections", 0)
+
+    def test_destination_configure_limbo_wrapped(self) -> None:
+        data_reg = DataPersistenceRegistry()
+        data_reg.register("memory", _StubWriteBackend)
+        parser = ProjectParser(
+            connection_registry=ConnectionRegistry(),
+            value_reader_registry=ValueReaderRegistry(),
+            data_persistence_registry=data_reg,
+        )
+
+        def _boom(_spec: object) -> None:
+            raise LimboValidationError("dest limbo")
+
+        payload = _minimal_project_payload()
+        payload["destinations"] = [{"name": "output", "type": "memory"}]
+        with (
+            patch.object(data_reg, "configure", side_effect=_boom),
+            pytest.raises(ParseError, match="dest limbo") as err,
+        ):
+            parser.parse(payload)
+        assert err.value.path == ("destinations", 0)

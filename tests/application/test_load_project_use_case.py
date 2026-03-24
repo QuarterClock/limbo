@@ -2,17 +2,27 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from limbo_core.adapters.connections import ConnectionRegistry
 from limbo_core.adapters.generators import GeneratorRegistry
 from limbo_core.adapters.persistence import (
-    PersistenceReadRegistry,
-    PersistenceWriteRegistry,
+    DataPersistenceRegistry,
+    PathResolverRegistry,
 )
 from limbo_core.adapters.plugins import PluggyPluginLoader
 from limbo_core.adapters.value_reader import ValueReaderRegistry
 from limbo_core.application.context import ResolutionContext, RuntimeContext
+from limbo_core.application.interfaces.generators import (
+    Generator,
+    GeneratorRegistration,
+    GeneratorRegistryPort,
+)
 from limbo_core.application.parsers import ProjectParser
 from limbo_core.application.services import (
     ProjectLoaderService,
@@ -26,14 +36,23 @@ from limbo_core.plugins import PluginManager
 from limbo_core.plugins.builtin.connections import SQLAlchemyConnectionBackend
 
 
-class _StaticGeneratorRegistry:
+class _StaticGeneratorRegistry(GeneratorRegistryPort):
     """Minimal generator registry stub for tests."""
 
     def __init__(self, hooks: set[str]) -> None:
         self._hooks = frozenset(hooks)
 
+    def register(self, registration: GeneratorRegistration) -> None:
+        raise NotImplementedError
+
     def get_hooks(self) -> frozenset[str]:
         return self._hooks
+
+    def resolve(self, qualified_hook: str) -> tuple[type[Generator], str]:
+        raise NotImplementedError
+
+    def clear(self) -> None:
+        raise NotImplementedError
 
 
 def _base_payload(generator_name: str = "gen.ok") -> dict[str, object]:
@@ -97,15 +116,14 @@ def connection_registry() -> ConnectionRegistry:
 
 
 @pytest.fixture
-def path_registry() -> PersistenceReadRegistry:
+def path_registry() -> PathResolverRegistry:
     """Create a shared path registry for loader and validator."""
-    return PersistenceReadRegistry()
+    return PathResolverRegistry()
 
 
 @pytest.fixture
 def loader(
-    connection_registry: ConnectionRegistry,
-    path_registry: PersistenceReadRegistry,
+    connection_registry: ConnectionRegistry, path_registry: PathResolverRegistry
 ) -> ProjectLoaderService:
     """Create project loader service with default plugin loader."""
     value_reader_registry = ValueReaderRegistry()
@@ -114,15 +132,15 @@ def loader(
             manager=PluginManager(
                 connection_registry=connection_registry,
                 value_reader_registry=value_reader_registry,
-                path_backend_registry=path_registry,
-                persistence_write_registry=PersistenceWriteRegistry(),
+                path_resolver_registry=path_registry,
+                data_persistence_registry=DataPersistenceRegistry(),
                 generator_registry=GeneratorRegistry(),
             )
         ),
         parser=ProjectParser(
             connection_registry=connection_registry,
             value_reader_registry=value_reader_registry,
-            path_backend_registry=path_registry,
+            path_resolver_registry=path_registry,
         ),
         validator=ProjectValidatorService(
             path_registry=path_registry, connection_registry=connection_registry
@@ -134,7 +152,7 @@ class TestLoadProjectWithContext:
     """Tests that exercise project loading with a RuntimeContext."""
 
     def test_validates_runtime_context(
-        self, loader: ProjectLoaderService, tmp_path
+        self, loader: ProjectLoaderService, tmp_path: Path
     ) -> None:
         """Load validates seed file paths against runtime context."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
@@ -152,7 +170,7 @@ class TestLoadProjectWithContext:
         self,
         loader: ProjectLoaderService,
         connection_registry: ConnectionRegistry,
-        tmp_path,
+        tmp_path: Path,
     ) -> None:
         """Parsed project connections are configured in the registry."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
@@ -170,7 +188,7 @@ class TestLoadProjectWithContext:
         assert isinstance(instances["main_db"], SQLAlchemyConnectionBackend)
 
     def test_missing_generator_raises(
-        self, loader: ProjectLoaderService, tmp_path
+        self, loader: ProjectLoaderService, tmp_path: Path
     ) -> None:
         """Raise if a table references an unknown generator."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
@@ -184,7 +202,7 @@ class TestLoadProjectWithContext:
             )
 
     def test_missing_source_connection_raises(
-        self, loader: ProjectLoaderService, tmp_path
+        self, loader: ProjectLoaderService, tmp_path: Path
     ) -> None:
         """Raise if a source references unknown runtime connection."""
         (tmp_path / "seed.csv").write_text("value\nx\n")
@@ -234,7 +252,7 @@ class TestLoadProjectWithoutContext:
         self,
         loader: ProjectLoaderService,
         monkeypatch: pytest.MonkeyPatch,
-        tmp_path,
+        tmp_path: Path,
     ) -> None:
         """Backend bindings alias value readers and path backends."""
         monkeypatch.setenv("DB_HOST", "bound.example.com")

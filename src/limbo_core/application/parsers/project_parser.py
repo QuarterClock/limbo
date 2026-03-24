@@ -38,8 +38,8 @@ if TYPE_CHECKING:
 
     from limbo_core.application.interfaces import (
         ConnectionRegistryPort,
-        PersistenceReadRegistryPort,
-        PersistenceWriteRegistryPort,
+        DataPersistenceRegistryPort,
+        PathResolverRegistryPort,
         ValueReaderRegistryPort,
     )
 
@@ -50,8 +50,8 @@ class ProjectParser:
 
     connection_registry: ConnectionRegistryPort
     value_reader_registry: ValueReaderRegistryPort
-    path_backend_registry: PersistenceReadRegistryPort | None = None
-    destination_registry: PersistenceWriteRegistryPort | None = None
+    path_resolver_registry: PathResolverRegistryPort | None = None
+    data_persistence_registry: DataPersistenceRegistryPort | None = None
 
     def parse(self, payload: dict[str, Any]) -> Project:
         """Parse a raw project payload into a typed project entity.
@@ -159,13 +159,13 @@ class ProjectParser:
         self._configure_registry(
             self.value_reader_registry, value_readers, "value_readers"
         )
-        if self.path_backend_registry is not None:
+        if self.path_resolver_registry is not None:
             self._configure_registry(
-                self.path_backend_registry, path_backends, "path_backends"
+                self.path_resolver_registry, path_backends, "path_backends"
             )
-        if self.destination_registry is not None:
+        if self.data_persistence_registry is not None:
             self._configure_registry(
-                self.destination_registry, destinations, "destinations"
+                self.data_persistence_registry, destinations, "destinations"
             )
 
     @staticmethod
@@ -194,11 +194,7 @@ class ProjectParser:
         for idx, connection in enumerate(connections):
             try:
                 self.connection_registry.configure(connection)
-            except ValueError as err:
-                raise ParseError(
-                    path=("connections", idx), message=str(err)
-                ) from err
-            except LimboValidationError as err:
+            except (ValueError, LimboValidationError) as err:
                 raise ParseError(
                     path=("connections", idx), message=str(err)
                 ) from err
@@ -207,7 +203,7 @@ class ProjectParser:
         """Reset project-scoped backend bindings before each parse."""
         self.value_reader_registry.clear_instances()
         self.connection_registry.clear_instances()
-        if self.path_backend_registry is not None:
-            self.path_backend_registry.clear_instances()
-        if self.destination_registry is not None:
-            self.destination_registry.clear_instances()
+        if self.path_resolver_registry is not None:
+            self.path_resolver_registry.clear_instances()
+        if self.data_persistence_registry is not None:
+            self.data_persistence_registry.clear_instances()

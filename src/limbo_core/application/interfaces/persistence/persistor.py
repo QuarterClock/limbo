@@ -1,4 +1,4 @@
-"""Persistor abstraction backed by persistence write backends."""
+"""Persistor abstraction backed by data persistence resolvers."""
 
 from __future__ import annotations
 

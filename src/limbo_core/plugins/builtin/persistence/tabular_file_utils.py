@@ -15,6 +15,9 @@ from limbo_core.domain.value_objects import CellValue, TabularBatch
 def safe_filename_stem(name: str) -> str:
     """Return a single path component safe for use as a file basename.
 
+    Returns:
+        A sanitized filename stem derived from ``name``.
+
     Raises:
         ValidationError: If the name is empty or unusable as a filename stem.
     """
@@ -30,7 +33,14 @@ def ensure_parent_dir(path: Path) -> None:
 
 
 def try_import_pyarrow() -> Any:
-    """Import pyarrow or raise MissingPackageError."""
+    """Import the pyarrow module.
+
+    Returns:
+        The imported ``pyarrow`` module.
+
+    Raises:
+        MissingPackageError: If pyarrow is not installed.
+    """
     try:
         import pyarrow as pa
     except ImportError as err:
@@ -39,7 +49,11 @@ def try_import_pyarrow() -> Any:
 
 
 def normalize_arrow_scalar(value: Any) -> CellValue:
-    """Normalize a PyArrow / Python scalar to CellValue (CSV/Parquet read)."""
+    """Normalize a PyArrow / Python scalar to CellValue (CSV/Parquet read).
+
+    Returns:
+        A value suitable for ``TabularBatch`` cells.
+    """
     if value is None:
         return None
     if isinstance(value, bool):
@@ -52,7 +66,11 @@ def normalize_arrow_scalar(value: Any) -> CellValue:
 
 
 def cell_to_json_value(value: CellValue) -> Any:
-    """Convert a cell to a JSON-serializable value (tagged for dates)."""
+    """Convert a cell to a JSON-serializable value (tagged for dates).
+
+    Returns:
+        A JSON-encodable object representing ``value``.
+    """
     if isinstance(value, datetime):
         return {"__type__": "datetime", "v": value.isoformat()}
     if isinstance(value, date):
@@ -61,7 +79,14 @@ def cell_to_json_value(value: CellValue) -> Any:
 
 
 def cell_from_json_value(value: Any) -> CellValue:
-    """Restore a cell value from JSON-loaded data."""
+    """Restore a cell value from JSON-loaded data.
+
+    Returns:
+        The decoded cell value.
+
+    Raises:
+        ValidationError: If the payload shape or type is unsupported.
+    """
     if isinstance(value, dict) and "__type__" in value:
         t = value.get("__type__")
         raw = value.get("v")
@@ -78,7 +103,11 @@ def cell_from_json_value(value: Any) -> CellValue:
 
 
 def tabular_batch_to_json_document(batch: TabularBatch) -> dict[str, Any]:
-    """Serialize batch to a JSON-friendly dict."""
+    """Serialize batch to a JSON-friendly dict.
+
+    Returns:
+        A mapping with ``column_names`` and ``rows`` suitable for JSON.
+    """
     return {
         "column_names": list(batch.column_names),
         "rows": [
@@ -89,7 +118,14 @@ def tabular_batch_to_json_document(batch: TabularBatch) -> dict[str, Any]:
 
 
 def tabular_batch_from_json_document(doc: Any) -> TabularBatch:
-    """Deserialize batch from a JSON document dict."""
+    """Deserialize batch from a JSON document dict.
+
+    Returns:
+        The reconstructed ``TabularBatch``.
+
+    Raises:
+        ValidationError: If ``doc`` is not a valid batch document.
+    """
     if not isinstance(doc, dict):
         raise ValidationError("Tabular JSON root must be an object")
     cols = doc.get("column_names")
@@ -108,7 +144,11 @@ def tabular_batch_from_json_document(doc: Any) -> TabularBatch:
 
 
 def dump_json_bytes(doc: dict[str, Any]) -> bytes:
-    """Serialize document to UTF-8 bytes (orjson if available)."""
+    """Serialize document to UTF-8 bytes (orjson if available).
+
+    Returns:
+        UTF-8 encoded JSON bytes.
+    """
     try:
         import orjson
 
@@ -118,7 +158,14 @@ def dump_json_bytes(doc: dict[str, Any]) -> bytes:
 
 
 def load_json_document_from_bytes(raw: bytes) -> dict[str, Any]:
-    """Parse a JSON object from UTF-8 bytes (orjson if available)."""
+    """Parse a JSON object from UTF-8 bytes (orjson if available).
+
+    Returns:
+        The parsed root object as a dict.
+
+    Raises:
+        ValidationError: If the root JSON value is not an object.
+    """
     try:
         import orjson
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from limbo_core.application.context import (
@@ -12,6 +14,12 @@ from limbo_core.application.interfaces import (
     GeneratorRegistryPort,
     ReferenceResolver,
 )
+
+if TYPE_CHECKING:
+    from limbo_core.application.interfaces.generators import (
+        Generator,
+        GeneratorRegistration,
+    )
 
 
 class _StubResolver(ReferenceResolver):
@@ -24,13 +32,17 @@ class _StubResolver(ReferenceResolver):
 class _StubRegistry(GeneratorRegistryPort):
     """Minimal generator registry stub."""
 
-    def register(self, registration) -> None:  # pragma: no cover
+    def register(
+        self, registration: GeneratorRegistration
+    ) -> None:  # pragma: no cover
         raise NotImplementedError
 
     def get_hooks(self) -> frozenset[str]:  # pragma: no cover
         return frozenset()
 
-    def resolve(self, qualified_hook: str):  # pragma: no cover
+    def resolve(
+        self, qualified_hook: str
+    ) -> tuple[type[Generator], str]:  # pragma: no cover
         raise NotImplementedError
 
     def clear(self) -> None:  # pragma: no cover

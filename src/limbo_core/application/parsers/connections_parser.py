@@ -55,18 +55,14 @@ def _parse_connections(
             )
         except ParseError:
             raise
-        except ValueError as err:
-            raise ParseError(path=item_path, message=str(err)) from err
-        except LimboValidationError as err:
+        except (ValueError, LimboValidationError) as err:
             raise ParseError(path=item_path, message=str(err)) from err
 
         check_duplicate_name(spec.name, seen_names, path=item_path)
         try:
             connection_registry.create(spec.type, config=spec.config)
             parsed.append(spec)
-        except ValueError as err:
-            raise ParseError(path=item_path, message=str(err)) from err
-        except LimboValidationError as err:
+        except (ValueError, LimboValidationError) as err:
             raise ParseError(path=item_path, message=str(err)) from err
     return parsed
 

@@ -40,9 +40,9 @@ if TYPE_CHECKING:
     from limbo_core.application.interfaces import (
         BackendRegistration,
         ConnectionBackend,
+        DataPersistenceBackend,
         GeneratorRegistration,
-        PersistenceReadBackend,
-        PersistenceWriteBackend,
+        PathResolverBackend,
         ValueReaderBackend,
     )
 
@@ -79,23 +79,23 @@ class LimboHookSpec:
         """
 
     @hookspec
-    def limbo_register_path_backends(  # type: ignore[empty-body]
+    def limbo_register_path_resolver_backends(  # type: ignore[empty-body]
         self,
-    ) -> list[BackendRegistration[PersistenceReadBackend]]:
-        """Register persistence read backends for runtime resource resolution.
+    ) -> list[BackendRegistration[PathResolverBackend]]:
+        """Register path resolver backends (filesystem, cloud, etc.).
 
         Returns:
-            List of explicit persistence read backend registrations.
+            List of explicit path resolver backend registrations.
         """
 
     @hookspec
-    def limbo_register_persistence_write_backends(  # type: ignore[empty-body]
+    def limbo_register_data_persistence_backends(  # type: ignore[empty-body]
         self,
-    ) -> list[BackendRegistration[PersistenceWriteBackend]]:
-        """Register persistence write backends for data materialization.
+    ) -> list[BackendRegistration[DataPersistenceBackend]]:
+        """Register tabular data persistence backends (csv, json, …).
 
         Returns:
-            List of explicit persistence write backend registrations.
+            List of explicit data persistence backend registrations.
         """
 
     @hookspec

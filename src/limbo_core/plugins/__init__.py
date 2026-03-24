@@ -15,8 +15,12 @@ Quick Start:
 
         from limbo_core.application.interfaces import (
             BackendRegistration,
+            PathResolverBackend,
         )
         from limbo_core.plugins import hookimpl
+        from limbo_core.plugins.builtin.persistence import (
+            FilesystemPathResolver,
+        )
 
         class MyPlugin:
             @hookimpl
@@ -42,13 +46,13 @@ Quick Start:
                 ]
 
             @hookimpl
-            def limbo_register_path_backends(
+            def limbo_register_path_resolver_backends(
                 self,
-            ) -> list[BackendRegistration[PathBackendPort]]:
+            ) -> list[BackendRegistration[PathResolverBackend]]:
                 return [
                     BackendRegistration(
                         key="file",
-                        backend_class=FilesystemPathBackend,
+                        backend_class=FilesystemPathResolver,
                     )
                 ]
 

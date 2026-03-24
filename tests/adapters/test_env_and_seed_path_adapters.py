@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
-from limbo_core.adapters.persistence import PersistenceReadRegistry
+from limbo_core.adapters.persistence import PathResolverRegistry
 from limbo_core.adapters.persistence.errors import UnknownPathBackendError
 from limbo_core.adapters.value_reader import ValueReaderRegistry
 from limbo_core.adapters.value_reader.errors import (
@@ -15,7 +15,7 @@ from limbo_core.adapters.value_reader.errors import (
 )
 from limbo_core.application.context import ResolutionContext
 from limbo_core.application.interfaces import (
-    PersistenceReadBackend,
+    PathResolverBackend,
     ValueReaderBackend,
 )
 from limbo_core.application.parsers.common import InvalidPathSpecError
@@ -23,14 +23,11 @@ from limbo_core.domain.entities import (
     LookupValue,
     PathBackendSpec,
     PathSpec,
-    ResolvedResource,
     ValueReaderBackendSpec,
 )
-from limbo_core.plugins.builtin.persistence import FilesystemReadBackend
+from limbo_core.domain.value_objects import LocalFilesystemStorageRef
+from limbo_core.plugins.builtin.persistence import FilesystemPathResolver
 from limbo_core.plugins.builtin.value_readers import OsEnvReader
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class _StaticReader(ValueReaderBackend):
@@ -38,16 +35,20 @@ class _StaticReader(ValueReaderBackend):
         return f"value:{key}"
 
 
-class _SpyBackend(PersistenceReadBackend):
+class _SpyBackend(PathResolverBackend):
     last_path_spec: PathSpec | None = None
     last_base: object | None = None
 
     def resolve(
         self, path_spec: PathSpec, *, base: object | None = None
-    ) -> ResolvedResource:
+    ) -> LocalFilesystemStorageRef:
         type(self).last_path_spec = path_spec
         type(self).last_base = base
-        return ResolvedResource(backend="spy", uri="spy://resource")
+        return LocalFilesystemStorageRef(
+            backend="spy",
+            uri="spy://resource",
+            local_path=Path("/__limbo_spy__/resource"),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -156,17 +157,17 @@ class TestValueReaderRegistryErrors:
 
 
 class TestPathBackendRegistryResolve:
-    """Tests for PersistenceReadRegistry.resolve happy-path behaviour."""
+    """Tests for PathResolverRegistry.resolve happy-path behaviour."""
 
     @pytest.fixture
-    def file_registry(self) -> PersistenceReadRegistry:
+    def file_registry(self) -> PathResolverRegistry:
         """Registry pre-loaded with the filesystem backend."""
-        reg = PersistenceReadRegistry()
-        reg.register("file", FilesystemReadBackend)
+        reg = PathResolverRegistry()
+        reg.register("file", FilesystemPathResolver)
         return reg
 
     def test_resolves_structured_local_path(
-        self, file_registry: PersistenceReadRegistry, tmp_path: Path
+        self, file_registry: PathResolverRegistry, tmp_path: Path
     ) -> None:
         """Registry resolves local specs relative to configured root alias."""
         (tmp_path / "data.csv").write_text("id\n1\n")
@@ -180,11 +181,11 @@ class TestPathBackendRegistryResolve:
         }
         resolved = file_registry.resolve(spec, context=ctx)
         assert resolved.backend == "file"
-        assert resolved.local_path == tmp_path / "data.csv"
+        assert resolved.as_local_path() == tmp_path / "data.csv"
 
     def test_resolves_existing_relative_path(
         self,
-        file_registry: PersistenceReadRegistry,
+        file_registry: PathResolverRegistry,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -192,12 +193,11 @@ class TestPathBackendRegistryResolve:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "seed.csv").write_text("id\n1\n")
         resolved = file_registry.resolve("seed.csv")
-        assert resolved.local_path is not None
-        assert resolved.local_path.name == "seed.csv"
+        assert resolved.as_local_path().name == "seed.csv"
 
     def test_dispatches_custom_backend(self) -> None:
         """Path registry dispatches structured backend specs correctly."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         resolved = registry.resolve({
             "path_from": {"backend": "s3", "location": "s3://bucket/key.csv"}
@@ -210,7 +210,7 @@ class TestPathBackendRegistryResolve:
 
     def test_uses_named_backend_binding(self) -> None:
         """Path registry dispatches through configured backend aliases."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         registry.configure(PathBackendSpec(name="archive", type="s3"))
         resolved = registry.resolve({
@@ -226,7 +226,7 @@ class TestPathBackendRegistryResolve:
 
     def test_resolve_falls_back_to_type_key_if_no_instance(self) -> None:
         """Resolve uses type registry when no named instance exists."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         resolved = registry.resolve({
             "path_from": {
@@ -241,7 +241,7 @@ class TestPathBackendRegistryResolve:
 
     def test_resolves_base_alias_before_dispatch(self) -> None:
         """Registry resolves the base alias and passes it to the backend."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         ctx = ResolutionContext(extra_aliases={"bucket": "my-project-bucket"})
         registry.resolve(
@@ -263,7 +263,7 @@ class TestPathBackendRegistryResolve:
             def __init__(self, parent: Path) -> None:
                 self.parent = parent
 
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         ctx = ResolutionContext(
             extra_aliases={"root": _AliasRoot(parent=tmp_path)}
@@ -282,7 +282,7 @@ class TestPathBackendRegistryResolve:
 
     def test_create_many_from_specs(self) -> None:
         """create_many instantiates backends from a list of PathBackendSpec."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         specs = [
             PathBackendSpec(name="a", type="s3"),
@@ -294,7 +294,7 @@ class TestPathBackendRegistryResolve:
 
     def test_configure_from_spec(self) -> None:
         """configure stores a named backend instance from a PathBackendSpec."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         registry.configure(PathBackendSpec(name="archive", type="s3"))
         instances = registry.get_instances()
@@ -306,21 +306,21 @@ class TestPathBackendRegistryErrors:
     """Tests for PathBackendRegistry error paths."""
 
     @pytest.fixture
-    def file_registry(self) -> PersistenceReadRegistry:
+    def file_registry(self) -> PathResolverRegistry:
         """Registry pre-loaded with the filesystem backend."""
-        reg = PersistenceReadRegistry()
-        reg.register("file", FilesystemReadBackend)
+        reg = PathResolverRegistry()
+        reg.register("file", FilesystemPathResolver)
         return reg
 
     def test_invalid_input_type_raises(
-        self, file_registry: PersistenceReadRegistry
+        self, file_registry: PathResolverRegistry
     ) -> None:
         """Registry raises explicit domain errors for malformed inputs."""
         with pytest.raises(InvalidPathSpecError):
             file_registry.resolve(123)
 
     def test_absolute_path_passes_through(
-        self, file_registry: PersistenceReadRegistry, tmp_path: Path
+        self, file_registry: PathResolverRegistry, tmp_path: Path
     ) -> None:
         """Registry resolves absolute paths embedded in structured specs."""
         spec = {
@@ -330,11 +330,11 @@ class TestPathBackendRegistryErrors:
             }
         }
         resolved = file_registry.resolve(spec)
-        assert resolved.local_path == tmp_path / "abs.csv"
+        assert resolved.as_local_path() == tmp_path / "abs.csv"
 
     def test_unknown_backend_raises(self) -> None:
         """Path registry rejects specs for unregistered backends."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         with pytest.raises(UnknownPathBackendError, match="s3"):
             registry.resolve({
                 "path_from": {
@@ -345,7 +345,7 @@ class TestPathBackendRegistryErrors:
 
     def test_empty_base_alias_raises(self) -> None:
         """Empty base alias is rejected with a specific error."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         ctx = ResolutionContext(extra_aliases={})
 
@@ -365,7 +365,7 @@ class TestPathBackendRegistryErrors:
 
     def test_unknown_base_alias_raises(self) -> None:
         """Unknown base alias key is rejected explicitly."""
-        registry = PersistenceReadRegistry()
+        registry = PathResolverRegistry()
         registry.register("s3", _SpyBackend)
         ctx = ResolutionContext(extra_aliases={})
 
@@ -391,15 +391,15 @@ class TestPathBackendRegistryErrors:
 
 
 class TestFilesystemPathBackend:
-    """Tests for the built-in FilesystemReadBackend."""
+    """Tests for the built-in FilesystemPathResolver."""
 
     @pytest.fixture
-    def backend(self) -> FilesystemReadBackend:
+    def backend(self) -> FilesystemPathResolver:
         """Fresh filesystem backend instance."""
-        return FilesystemReadBackend()
+        return FilesystemPathResolver()
 
     def test_accepts_generic_path_spec(
-        self, backend: FilesystemReadBackend
+        self, backend: FilesystemPathResolver
     ) -> None:
         """Filesystem backend operates on generic path specs."""
         with pytest.raises(FileNotFoundError, match="does not exist"):
@@ -407,7 +407,7 @@ class TestFilesystemPathBackend:
 
     def test_missing_relative_path_raises(
         self,
-        backend: FilesystemReadBackend,
+        backend: FilesystemPathResolver,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -417,21 +417,21 @@ class TestFilesystemPathBackend:
             backend.resolve(PathSpec(backend="file", location="missing.csv"))
 
     def test_resolves_with_base_path(
-        self, backend: FilesystemReadBackend, tmp_path: Path
+        self, backend: FilesystemPathResolver, tmp_path: Path
     ) -> None:
         """Backend resolves relative paths against a pre-resolved base."""
         resolved = backend.resolve(
             PathSpec(backend="file", location=""), base=tmp_path
         )
         assert resolved.backend == "file"
-        assert resolved.local_path == tmp_path
+        assert resolved.as_local_path() == tmp_path
 
     def test_resolves_relative_against_base(
-        self, backend: FilesystemReadBackend, tmp_path: Path
+        self, backend: FilesystemPathResolver, tmp_path: Path
     ) -> None:
         """Backend joins location with pre-resolved base path."""
         (tmp_path / "data.csv").write_text("id\n1\n")
         resolved = backend.resolve(
             PathSpec(backend="file", location="data.csv"), base=tmp_path
         )
-        assert resolved.local_path == tmp_path / "data.csv"
+        assert resolved.as_local_path() == tmp_path / "data.csv"

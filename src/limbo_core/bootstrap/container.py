@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any
 from limbo_core.adapters.connections import ConnectionRegistry
 from limbo_core.adapters.generators import GeneratorRegistry
 from limbo_core.adapters.persistence import (
-    PersistenceReadRegistry,
-    PersistenceWriteRegistry,
+    DataPersistenceRegistry,
+    PathResolverRegistry,
 )
 from limbo_core.adapters.plugins import PluggyPluginLoader
 from limbo_core.adapters.value_reader import ValueReaderRegistry
@@ -35,11 +35,11 @@ class Container:
     value_reader_registry: ValueReaderRegistry = field(
         default_factory=ValueReaderRegistry
     )
-    path_registry: PersistenceReadRegistry = field(
-        default_factory=PersistenceReadRegistry
+    path_resolver_registry: PathResolverRegistry = field(
+        default_factory=PathResolverRegistry
     )
-    persistence_write_registry: PersistenceWriteRegistry = field(
-        default_factory=PersistenceWriteRegistry
+    data_persistence_registry: DataPersistenceRegistry = field(
+        default_factory=DataPersistenceRegistry
     )
     generator_registry: GeneratorRegistry = field(
         default_factory=GeneratorRegistry
@@ -55,19 +55,19 @@ class Container:
         self.plugin_manager = PluginManager(
             connection_registry=self.connection_registry,
             value_reader_registry=self.value_reader_registry,
-            path_backend_registry=self.path_registry,
-            persistence_write_registry=self.persistence_write_registry,
+            path_resolver_registry=self.path_resolver_registry,
+            data_persistence_registry=self.data_persistence_registry,
             generator_registry=self.generator_registry,
         )
         self.plugin_loader = PluggyPluginLoader(manager=self.plugin_manager)
         self.project_parser = ProjectParser(
             connection_registry=self.connection_registry,
             value_reader_registry=self.value_reader_registry,
-            path_backend_registry=self.path_registry,
-            destination_registry=self.persistence_write_registry,
+            path_resolver_registry=self.path_resolver_registry,
+            data_persistence_registry=self.data_persistence_registry,
         )
         self.project_validator_service = ProjectValidatorService(
-            path_registry=self.path_registry,
+            path_registry=self.path_resolver_registry,
             connection_registry=self.connection_registry,
         )
         self.project_loader_service = ProjectLoaderService(

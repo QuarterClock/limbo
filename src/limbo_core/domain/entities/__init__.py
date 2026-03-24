@@ -11,7 +11,7 @@ from .backends import (
 from .generation import GenerationContext
 from .project import Project
 from .resources import PathSpec
-from .seeds import ResolvedResource, Seed, SeedColumn, SeedConfig, SeedFile
+from .seeds import Seed, SeedColumn, SeedConfig, SeedFile
 from .sources import Source, SourceColumn, SourceConfig
 from .tables import (
     Table,
@@ -37,7 +37,6 @@ __all__ = [
     "PathSpec",
     "Project",
     "ReferenceValue",
-    "ResolvedResource",
     "Seed",
     "SeedColumn",
     "SeedConfig",

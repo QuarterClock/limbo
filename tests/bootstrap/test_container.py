@@ -3,32 +3,40 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from pathlib import Path
 
-from limbo_core.application.interfaces.persistence import (
-    PersistenceWriteBackend,
-)
+from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.bootstrap import Container, get_container
-
-if TYPE_CHECKING:
-    from limbo_core.domain.value_objects import TabularBatch
+from limbo_core.domain.value_objects import (
+    LocalFilesystemStorageRef,
+    ResolvedStorageRef,
+    TabularBatch,
+)
 
 
 @dataclass(slots=True)
-class _StubWriteBackend(PersistenceWriteBackend):
+class _StubWriteBackend(DataPersistenceBackend):
     store: dict[str, TabularBatch] = field(default_factory=dict)
+    _root: Path = field(default_factory=lambda: Path("/__limbo_stub__"))
 
-    def save(self, name: str, data: TabularBatch) -> None:
-        self.store[name] = data
+    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
+        return LocalFilesystemStorageRef(
+            backend="memory",
+            uri=f"memory://{name}",
+            local_path=self._root / name,
+        )
 
-    def load(self, name: str) -> TabularBatch:
-        return self.store[name]
+    def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
+        self.store[ref.as_local_path().name] = data
 
-    def exists(self, name: str) -> bool:
-        return name in self.store
+    def load(self, ref: ResolvedStorageRef) -> TabularBatch:
+        return self.store[ref.as_local_path().name]
 
-    def cleanup(self, name: str) -> None:
-        self.store.pop(name, None)
+    def exists(self, ref: ResolvedStorageRef) -> bool:
+        return ref.as_local_path().name in self.store
+
+    def cleanup(self, ref: ResolvedStorageRef) -> None:
+        self.store.pop(ref.as_local_path().name, None)
 
 
 class TestContainer:
@@ -43,7 +51,7 @@ class TestContainer:
     def test_load_project_delegates_to_loader_service(self) -> None:
         """Container.load_project returns parsed project from wired service."""
         container = Container()
-        container.persistence_write_registry.register(
+        container.data_persistence_registry.register(
             "memory", _StubWriteBackend
         )
         payload = {

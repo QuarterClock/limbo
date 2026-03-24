@@ -6,15 +6,15 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from .connections import ConnectionBackend
-from .persistence import PersistenceReadBackend, PersistenceWriteBackend
+from .persistence import DataPersistenceBackend, PathResolverBackend
 from .value_reader import ValueReaderBackend
 
 BackendType = TypeVar(
     "BackendType",
     bound=ConnectionBackend
     | ValueReaderBackend
-    | PersistenceReadBackend
-    | PersistenceWriteBackend,
+    | PathResolverBackend
+    | DataPersistenceBackend,
 )
 
 

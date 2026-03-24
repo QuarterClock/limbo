@@ -1,15 +1,18 @@
-"""JSONL tabular PersistenceWriteBackend (orjson when installed)."""
+"""JSONL tabular data persistence (orjson when installed)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 
-from limbo_core.application.interfaces.persistence import (
-    PersistenceWriteBackend,
-)
+from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.domain.validation import ValidationError
-from limbo_core.domain.value_objects import CellValue, TabularBatch
+from limbo_core.domain.value_objects import (
+    CellValue,
+    LocalFilesystemStorageRef,
+    ResolvedStorageRef,
+    TabularBatch,
+)
 
 from .tabular_file_utils import (
     cell_from_json_value,
@@ -24,7 +27,7 @@ from .tabular_file_utils import (
 
 
 @dataclass
-class JsonlFilePersistenceWriteBackend(PersistenceWriteBackend):
+class JsonlFileDataPersistenceBackend(DataPersistenceBackend):
     """Read/write newline-delimited JSON rows (orjson when installed).
 
     With zero data rows, writes a single envelope line (column_names + rows [])
@@ -35,13 +38,19 @@ class JsonlFilePersistenceWriteBackend(PersistenceWriteBackend):
     encoding: str = "utf-8"
 
     def __post_init__(self) -> None:
+        """Coerce ``directory`` to a Path."""
         self.directory = Path(self.directory)
 
-    def _path(self, name: str) -> Path:
-        return Path(self.directory) / f"{safe_filename_stem(name)}.jsonl"
+    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
+        """Return a ref for ``name`` under this backend's directory."""
+        path = Path(self.directory) / f"{safe_filename_stem(name)}.jsonl"
+        return LocalFilesystemStorageRef(
+            backend="file", uri=str(path), local_path=path
+        )
 
-    def save(self, name: str, data: TabularBatch) -> None:
-        path = self._path(name)
+    def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
+        """Serialize ``data`` to the JSONL file for ``ref``."""
+        path = ref.as_local_path()
         ensure_parent_dir(path)
         if not data.rows:
             payload = dump_json_bytes(tabular_batch_to_json_document(data))
@@ -53,8 +62,17 @@ class JsonlFilePersistenceWriteBackend(PersistenceWriteBackend):
             parts.append(dump_json_bytes(doc) + b"\n")
         path.write_bytes(b"".join(parts))
 
-    def load(self, name: str) -> TabularBatch:
-        path = self._path(name)
+    def load(self, ref: ResolvedStorageRef) -> TabularBatch:
+        """Load a tabular batch from the JSONL file for ``ref``.
+
+        Returns:
+            The decoded ``TabularBatch``.
+
+        Raises:
+            FileNotFoundError: If the file is missing.
+            ValidationError: If the file is empty or rows are inconsistent.
+        """
+        path = ref.as_local_path()
         if not path.is_file():
             raise FileNotFoundError(path)
         raw = path.read_bytes()
@@ -79,10 +97,10 @@ class JsonlFilePersistenceWriteBackend(PersistenceWriteBackend):
             })
         return TabularBatch(column_names=column_names, rows=tuple(parsed))
 
-    def exists(self, name: str) -> bool:
-        return self._path(name).is_file()
+    def exists(self, ref: ResolvedStorageRef) -> bool:
+        """Return True if the file for ``ref`` exists."""
+        return ref.exists()
 
-    def cleanup(self, name: str) -> None:
-        p = self._path(name)
-        if p.is_file():
-            p.unlink()
+    def cleanup(self, ref: ResolvedStorageRef) -> None:
+        """Remove the file for ``ref`` if present."""
+        ref.unlink()

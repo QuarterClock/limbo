@@ -1,4 +1,4 @@
-"""Backend interface for persistence path resolution."""
+"""Backend interface for resolving logical paths to storage references."""
 
 from __future__ import annotations
 
@@ -6,17 +6,18 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from limbo_core.domain.entities import PathSpec, ResolvedResource
+    from limbo_core.domain.entities import PathSpec
+    from limbo_core.domain.value_objects import ResolvedStorageRef
 
 
-class PersistenceReadBackend(ABC):
-    """Backend contract for resolving resource locations."""
+class PathResolverBackend(ABC):
+    """Resolve structured path specs to storage references."""
 
     @abstractmethod
     def resolve(
         self, path_spec: PathSpec, *, base: Any | None = None
-    ) -> ResolvedResource:
-        """Resolve one structured path spec to a backend-agnostic resource.
+    ) -> ResolvedStorageRef:
+        """Resolve one structured path spec to a storage reference.
 
         Args:
             path_spec: Parsed path specification.

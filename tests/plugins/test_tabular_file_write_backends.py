@@ -1,4 +1,4 @@
-"""Tests for built-in tabular file PersistenceWriteBackend implementations."""
+"""Tests for built-in tabular file DataPersistenceBackend implementations."""
 
 from __future__ import annotations
 
@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 from limbo_core.domain.validation import ValidationError
 from limbo_core.domain.value_objects import TabularBatch
 from limbo_core.plugins.builtin.persistence import (
-    CsvFilePersistenceWriteBackend,
-    JsonFilePersistenceWriteBackend,
-    JsonlFilePersistenceWriteBackend,
-    ParquetFilePersistenceWriteBackend,
+    CsvFileDataPersistenceBackend,
+    JsonFileDataPersistenceBackend,
+    JsonlFileDataPersistenceBackend,
+    ParquetFileDataPersistenceBackend,
 )
+from limbo_core.plugins.plugin_manager import PluginManager
 
 
 def _sample_batch() -> TabularBatch:
@@ -49,9 +50,9 @@ def _empty_row_batch() -> TabularBatch:
 @pytest.mark.parametrize(
     "backend_cls",
     [
-        JsonFilePersistenceWriteBackend,
-        JsonlFilePersistenceWriteBackend,
-        ParquetFilePersistenceWriteBackend,
+        JsonFileDataPersistenceBackend,
+        JsonlFileDataPersistenceBackend,
+        ParquetFileDataPersistenceBackend,
     ],
 )
 def test_round_trip_save_load(tmp_path: Path, backend_cls: type) -> None:
@@ -60,38 +61,42 @@ def test_round_trip_save_load(tmp_path: Path, backend_cls: type) -> None:
     d.mkdir()
     backend = backend_cls(directory=d)
     batch = _sample_batch()
-    backend.save("users", batch)
-    assert backend.exists("users")
-    loaded = backend.load("users")
+    ref = backend.ref_for_name("users")
+    backend.save(ref, batch)
+    assert backend.exists(ref)
+    loaded = backend.load(ref)
     assert loaded.column_names == batch.column_names
     assert loaded.rows == batch.rows
-    backend.cleanup("users")
-    assert not backend.exists("users")
+    backend.cleanup(ref)
+    assert not backend.exists(backend.ref_for_name("users"))
 
 
 def test_csv_stdlib_round_trip_coerces_scalars(tmp_path: Path) -> None:
     """CSV load yields strings; bool/date/datetime written as text."""
     d = tmp_path / "csvout"
     d.mkdir()
-    backend = CsvFilePersistenceWriteBackend(directory=d)
+    backend = CsvFileDataPersistenceBackend(directory=d)
     batch = _sample_batch()
-    backend.save("users", batch)
-    loaded = backend.load("users")
+    ref = backend.ref_for_name("users")
+    backend.save(ref, batch)
+    loaded = backend.load(ref)
     assert loaded.column_names == batch.column_names
     assert len(loaded.rows) == 2
     assert loaded.rows[0]["id"] == "1"
     assert loaded.rows[0]["flag"] == "true"
     assert loaded.rows[0]["note"] is None
     assert loaded.rows[0]["d"] == "2024-01-02"
-    assert loaded.rows[0]["ts"].startswith("2024-01-02T03:04:05")
+    ts_cell = loaded.rows[0]["ts"]
+    assert isinstance(ts_cell, str)
+    assert ts_cell.startswith("2024-01-02T03:04:05")
 
 
 @pytest.mark.parametrize(
     "backend_cls",
     [
-        JsonFilePersistenceWriteBackend,
-        JsonlFilePersistenceWriteBackend,
-        ParquetFilePersistenceWriteBackend,
+        JsonFileDataPersistenceBackend,
+        JsonlFileDataPersistenceBackend,
+        ParquetFileDataPersistenceBackend,
     ],
 )
 def test_empty_rows_round_trip(tmp_path: Path, backend_cls: type) -> None:
@@ -100,8 +105,9 @@ def test_empty_rows_round_trip(tmp_path: Path, backend_cls: type) -> None:
     d.mkdir()
     backend = backend_cls(directory=d)
     batch = _empty_row_batch()
-    backend.save("t", batch)
-    loaded = backend.load("t")
+    ref = backend.ref_for_name("t")
+    backend.save(ref, batch)
+    loaded = backend.load(ref)
     assert loaded == batch
 
 
@@ -109,10 +115,11 @@ def test_csv_empty_rows_round_trip(tmp_path: Path) -> None:
     """CSV with header only round-trips to zero rows."""
     d = tmp_path / "cempty"
     d.mkdir()
-    backend = CsvFilePersistenceWriteBackend(directory=d)
+    backend = CsvFileDataPersistenceBackend(directory=d)
     batch = _empty_row_batch()
-    backend.save("t", batch)
-    loaded = backend.load("t")
+    ref = backend.ref_for_name("t")
+    backend.save(ref, batch)
+    loaded = backend.load(ref)
     assert loaded.column_names == batch.column_names
     assert loaded.rows == ()
 
@@ -120,25 +127,26 @@ def test_csv_empty_rows_round_trip(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "backend_cls",
     [
-        CsvFilePersistenceWriteBackend,
-        JsonFilePersistenceWriteBackend,
-        JsonlFilePersistenceWriteBackend,
-        ParquetFilePersistenceWriteBackend,
+        CsvFileDataPersistenceBackend,
+        JsonFileDataPersistenceBackend,
+        JsonlFileDataPersistenceBackend,
+        ParquetFileDataPersistenceBackend,
     ],
 )
 def test_load_missing_raises(tmp_path: Path, backend_cls: type) -> None:
     backend = backend_cls(directory=tmp_path)
+    ref = backend.ref_for_name("nope")
     with pytest.raises(FileNotFoundError):
-        backend.load("nope")
+        backend.load(ref)
 
 
 @pytest.mark.parametrize(
     "backend_cls",
     [
-        CsvFilePersistenceWriteBackend,
-        JsonFilePersistenceWriteBackend,
-        JsonlFilePersistenceWriteBackend,
-        ParquetFilePersistenceWriteBackend,
+        CsvFileDataPersistenceBackend,
+        JsonFileDataPersistenceBackend,
+        JsonlFileDataPersistenceBackend,
+        ParquetFileDataPersistenceBackend,
     ],
 )
 def test_invalid_name_raises(backend_cls: type, tmp_path: Path) -> None:
@@ -146,40 +154,96 @@ def test_invalid_name_raises(backend_cls: type, tmp_path: Path) -> None:
     d.mkdir()
     backend = backend_cls(directory=d)
     with pytest.raises(ValidationError):
-        backend.save("", _sample_batch())
+        backend.ref_for_name("")
 
 
 def test_csv_pyarrow_round_trip(tmp_path: Path) -> None:
     pytest.importorskip("pyarrow")
     d = tmp_path / "pcsv"
     d.mkdir()
-    backend = CsvFilePersistenceWriteBackend(directory=d, csv_engine="pyarrow")
+    backend = CsvFileDataPersistenceBackend(directory=d, csv_engine="pyarrow")
     batch = _sample_batch()
-    backend.save("u", batch)
-    loaded = backend.load("u")
+    ref = backend.ref_for_name("u")
+    backend.save(ref, batch)
+    loaded = backend.load(ref)
     assert loaded.column_names == batch.column_names
     assert len(loaded.rows) == len(batch.rows)
 
 
+def test_csv_invalid_engine_raises(tmp_path: Path) -> None:
+    d = tmp_path / "badeng"
+    d.mkdir()
+    backend = CsvFileDataPersistenceBackend(
+        directory=d, csv_engine="not-a-mode"
+    )
+    ref = backend.ref_for_name("x")
+    with pytest.raises(ValidationError, match="csv_engine"):
+        backend.save(ref, _sample_batch())
+
+
+def test_csv_stdlib_load_without_header_raises(tmp_path: Path) -> None:
+    d = tmp_path / "nohdr"
+    d.mkdir()
+    p = d / "t.csv"
+    p.write_bytes(b"")
+    backend = CsvFileDataPersistenceBackend(directory=d)
+    ref = backend.ref_for_name("t")
+    with pytest.raises(ValidationError, match="no header"):
+        backend.load(ref)
+
+
+def test_csv_exists_and_cleanup(tmp_path: Path) -> None:
+    d = tmp_path / "ex"
+    d.mkdir()
+    backend = CsvFileDataPersistenceBackend(directory=d)
+    ref = backend.ref_for_name("f")
+    assert not backend.exists(ref)
+    backend.save(ref, _empty_row_batch())
+    assert backend.exists(ref)
+    backend.cleanup(ref)
+    assert not backend.exists(ref)
+
+
+def test_jsonl_load_whitespace_only_raises(tmp_path: Path) -> None:
+    d = tmp_path / "jwl"
+    d.mkdir()
+    p = d / "e.jsonl"
+    p.write_bytes(b"\n  \n\t\n")
+    backend = JsonlFileDataPersistenceBackend(directory=d)
+    ref = backend.ref_for_name("e")
+    with pytest.raises(ValidationError, match="empty"):
+        backend.load(ref)
+
+
+def test_jsonl_row_key_mismatch_raises(tmp_path: Path) -> None:
+    d = tmp_path / "jkm"
+    d.mkdir()
+    p = d / "m.jsonl"
+    p.write_text('{"a": 1}\n{"b": 2}\n', encoding="utf-8")
+    backend = JsonlFileDataPersistenceBackend(directory=d)
+    ref = backend.ref_for_name("m")
+    with pytest.raises(ValidationError, match="row 1"):
+        backend.load(ref)
+
+
 def test_builtin_registers_tabular_write_backends() -> None:
-    """Builtin plugin registers csv, json, jsonl, parquet write types."""
+    """Builtin plugin registers csv, json, jsonl, parquet data backends."""
     from limbo_core.adapters.connections import ConnectionRegistry
     from limbo_core.adapters.generators import GeneratorRegistry
     from limbo_core.adapters.persistence import (
-        PersistenceReadRegistry,
-        PersistenceWriteRegistry,
+        DataPersistenceRegistry,
+        PathResolverRegistry,
     )
     from limbo_core.adapters.value_reader import ValueReaderRegistry
-    from limbo_core.plugins import PluginManager
 
     manager = PluginManager(
         connection_registry=ConnectionRegistry(),
         value_reader_registry=ValueReaderRegistry(),
-        path_backend_registry=PersistenceReadRegistry(),
-        persistence_write_registry=PersistenceWriteRegistry(),
+        path_resolver_registry=PathResolverRegistry(),
+        data_persistence_registry=DataPersistenceRegistry(),
         generator_registry=GeneratorRegistry(),
     )
     manager.load_plugins()
-    types = manager._persistence_write_registry.get_types()
+    types = manager._data_persistence_registry.get_types()
     for key in ("csv", "json", "jsonl", "parquet"):
         assert key in types

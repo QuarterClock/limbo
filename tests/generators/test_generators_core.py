@@ -47,7 +47,8 @@ class _SampleGenerator(Generator):
 def test_generates_decorator_attaches_hooks() -> None:
     """@generates decorator records local hook names on methods."""
     method = _SampleGenerator.email
-    hooks = method._limbo_hooks
+    hook_attr = "_limbo_hooks"
+    hooks = getattr(method, hook_attr)
     assert "email" in hooks
 
 

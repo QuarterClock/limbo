@@ -148,26 +148,6 @@ lint.ignore = [
     "TRY300", # Consider moving this statement to an else block
 ]
 lint.per-file-ignores."__init__.py" = [ "F403" ]
-lint.per-file-ignores."src/limbo_core/plugins/builtin/persistence/csv_file_persistence_write_backend.py" = [
-    "D102",
-    "D105",
-]
-lint.per-file-ignores."src/limbo_core/plugins/builtin/persistence/json_file_persistence_write_backend.py" = [
-    "D102",
-    "D105",
-]
-lint.per-file-ignores."src/limbo_core/plugins/builtin/persistence/jsonl_file_persistence_write_backend.py" = [
-    "D102",
-    "D105",
-]
-lint.per-file-ignores."src/limbo_core/plugins/builtin/persistence/parquet_file_persistence_write_backend.py" = [
-    "D102",
-    "D105",
-]
-lint.per-file-ignores."src/limbo_core/plugins/builtin/persistence/tabular_file_utils.py" = [
-    "DOC201",
-    "DOC501",
-]
 lint.per-file-ignores."tests/**/*.py" = [ "B903", "D", "DOC", "INP" ]
 # Allow fix for all enabled rules (when `--fix`) is provided.
 lint.fixable = [ "ALL" ]

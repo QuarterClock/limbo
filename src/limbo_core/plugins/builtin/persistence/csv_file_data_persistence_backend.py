@@ -1,4 +1,4 @@
-"""CSV tabular PersistenceWriteBackend (stdlib or optional PyArrow)."""
+"""CSV tabular data persistence (stdlib or optional PyArrow)."""
 
 from __future__ import annotations
 
@@ -7,11 +7,14 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-from limbo_core.application.interfaces.persistence import (
-    PersistenceWriteBackend,
-)
+from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.domain.validation import ValidationError
-from limbo_core.domain.value_objects import CellValue, TabularBatch
+from limbo_core.domain.value_objects import (
+    CellValue,
+    LocalFilesystemStorageRef,
+    ResolvedStorageRef,
+    TabularBatch,
+)
 
 from .tabular_file_utils import (
     ensure_parent_dir,
@@ -22,8 +25,8 @@ from .tabular_file_utils import (
 
 
 @dataclass
-class CsvFilePersistenceWriteBackend(PersistenceWriteBackend):
-    """Read/write CSV files under a fixed directory.
+class CsvFileDataPersistenceBackend(DataPersistenceBackend):
+    """Read/write CSV under a fixed directory via storage refs.
 
     Config:
         directory: Output directory path.
@@ -36,11 +39,16 @@ class CsvFilePersistenceWriteBackend(PersistenceWriteBackend):
     csv_engine: str = "stdlib"
 
     def __post_init__(self) -> None:
+        """Coerce ``directory`` to a Path and normalize ``csv_engine``."""
         self.directory = Path(self.directory)
         self.csv_engine = self.csv_engine.strip().lower()
 
-    def _path(self, name: str) -> Path:
-        return Path(self.directory) / f"{safe_filename_stem(name)}.csv"
+    def ref_for_name(self, name: str) -> LocalFilesystemStorageRef:
+        """Return a ref for ``name`` under this backend's directory."""
+        path = Path(self.directory) / f"{safe_filename_stem(name)}.csv"
+        return LocalFilesystemStorageRef(
+            backend="file", uri=str(path), local_path=path
+        )
 
     @staticmethod
     def _cell_as_text(value: CellValue) -> str:
@@ -54,8 +62,13 @@ class CsvFilePersistenceWriteBackend(PersistenceWriteBackend):
             return value.isoformat()
         return str(value)
 
-    def save(self, name: str, data: TabularBatch) -> None:
-        path = self._path(name)
+    def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
+        """Write ``data`` to the CSV file for ``ref``.
+
+        Raises:
+            ValidationError: If ``csv_engine`` is not ``stdlib`` or ``pyarrow``.
+        """
+        path = ref.as_local_path()
         ensure_parent_dir(path)
         if self.csv_engine == "pyarrow":
             pa = try_import_pyarrow()
@@ -80,8 +93,17 @@ class CsvFilePersistenceWriteBackend(PersistenceWriteBackend):
                     k: self._cell_as_text(row[k]) for k in data.column_names
                 })
 
-    def load(self, name: str) -> TabularBatch:
-        path = self._path(name)
+    def load(self, ref: ResolvedStorageRef) -> TabularBatch:
+        """Load a tabular batch from the CSV file for ``ref``.
+
+        Returns:
+            The decoded ``TabularBatch``.
+
+        Raises:
+            FileNotFoundError: If the file is missing.
+            ValidationError: If the CSV has no header row.
+        """
+        path = ref.as_local_path()
         if not path.is_file():
             raise FileNotFoundError(path)
         if self.csv_engine == "pyarrow":
@@ -112,10 +134,10 @@ class CsvFilePersistenceWriteBackend(PersistenceWriteBackend):
                 rows.append(row_out)
         return TabularBatch(column_names=column_names, rows=tuple(rows))
 
-    def exists(self, name: str) -> bool:
-        return self._path(name).is_file()
+    def exists(self, ref: ResolvedStorageRef) -> bool:
+        """Return True if the file for ``ref`` exists."""
+        return ref.exists()
 
-    def cleanup(self, name: str) -> None:
-        p = self._path(name)
-        if p.is_file():
-            p.unlink()
+    def cleanup(self, ref: ResolvedStorageRef) -> None:
+        """Remove the file for ``ref`` if present."""
+        ref.unlink()

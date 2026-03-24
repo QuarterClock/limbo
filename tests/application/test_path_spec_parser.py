@@ -13,7 +13,7 @@ def test_parse_path_spec_rejects_non_mapping_non_string() -> None:
     with pytest.raises(
         InvalidPathSpecError, match="path spec expects a mapping or string"
     ):
-        parse_path_spec(123)  # type: ignore[arg-type]
+        parse_path_spec(123)
 
 
 def test_parse_path_spec_rejects_non_mapping_path_from() -> None:

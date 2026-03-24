@@ -6,14 +6,17 @@ from dataclasses import dataclass
 
 import pytest
 
-from limbo_core.domain.entities import Artifact
+from limbo_core.domain.entities.artifacts.artifact import Artifact
+from limbo_core.domain.entities.artifacts.column import ArtifactColumn
+from limbo_core.domain.entities.artifacts.config import ArtifactConfig
+from limbo_core.domain.entities.artifacts.data_types import DataType
 from limbo_core.domain.errors import DomainError, DomainValidationError
 from limbo_core.errors import LimboError, LimboValidationError
 from limbo_core.validation import ValidationError
 
 
 @dataclass(slots=True, kw_only=True)
-class _DemoArtifact(Artifact[dict[str, str], str]):
+class _DemoArtifact(Artifact[ArtifactConfig, ArtifactColumn]):
     """Minimal concrete artifact for base-class behavior tests."""
 
 
@@ -51,11 +54,12 @@ class TestArtifactValidation:
         with pytest.raises(
             ValidationError, match="Field 'columns' must have at least one item"
         ):
-            _DemoArtifact(name="users", config={}, columns=[])
+            _DemoArtifact(name="users", config=ArtifactConfig(), columns=[])
 
     def test_accepts_non_empty_columns(self) -> None:
         """Artifact base class accepts valid non-empty column payloads."""
+        col = ArtifactColumn(name="id", data_type=DataType.INTEGER)
         artifact = _DemoArtifact(
-            name="users", config={"materialized": "table"}, columns=["id"]
+            name="users", config=ArtifactConfig(), columns=[col]
         )
-        assert artifact.columns == ["id"]
+        assert artifact.columns == [col]
