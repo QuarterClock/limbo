@@ -33,13 +33,13 @@ repos:
       - id: check-github-workflows
       - id: check-renovate
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.5
+    rev: v0.15.7
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/rvben/rumdl-pre-commit
-    rev: v0.1.46
+    rev: v0.1.59
     hooks:
       - id: rumdl
         args: [--fix]
@@ -49,15 +49,15 @@ repos:
       - id: codespell
         additional_dependencies: [tomli]
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.18.1"
+    rev: v2.20.0
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.10.9
+    rev: 0.11.0
     hooks:
       - id: uv-lock
       - id: uv-sync
-        args: ["--locked", "--dev"]
+        args: ["--locked", "--all-groups", "--all-extras"]
         stages:
           - pre-commit
           - post-checkout
