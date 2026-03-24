@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from limbo_core.application.context import ResolutionContext, RuntimeContext
     from limbo_core.application.interfaces import (
         ConnectionRegistryPort,
-        PersistenceReadResolverPort,
+        PathResolverPort,
     )
     from limbo_core.domain.entities import Project
 
@@ -36,7 +36,7 @@ class UnknownSourceConnectionError(DomainValidationError):
 class ProjectValidatorService:
     """Validate project references that require runtime context."""
 
-    path_registry: PersistenceReadResolverPort
+    path_registry: PathResolverPort
     connection_registry: ConnectionRegistryPort
 
     def validate(

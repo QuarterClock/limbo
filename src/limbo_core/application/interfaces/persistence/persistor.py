@@ -1,27 +1,32 @@
-"""Persistor abstraction backed by persistence write backends."""
+"""Persistor abstraction backed by data persistence resolvers."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from limbo_core.domain.value_objects import TabularBatch
 
 
 class Persistor(ABC):
     """Coordinate materialization and caching of generated data."""
 
     @abstractmethod
-    def save(self, name: str, data: Any, *, materialize: bool = True) -> None:
+    def save(
+        self, name: str, data: TabularBatch, *, materialize: bool = True
+    ) -> None:
         """Save data under a logical name.
 
         Args:
             name: Logical table or artifact name.
-            data: Data payload to persist.
+            data: Tabular batch to persist.
             materialize: When True, write to permanent storage. When False,
                 cache for intermediate reuse by downstream dependents.
         """
 
     @abstractmethod
-    def load(self, name: str) -> Any:
+    def load(self, name: str) -> TabularBatch:
         """Load previously saved or cached data."""
 
     @abstractmethod

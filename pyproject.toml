@@ -33,6 +33,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [ "pluggy>=1.6.0,<2.0.0" ]
+optional-dependencies.orjson = [ "orjson>=3.9.0,<4.0.0" ]
+optional-dependencies.pyarrow = [ "pyarrow>=22.0.0,<24.0.0" ]
 optional-dependencies.sqlalchemy = [ "sqlalchemy>=2.0.0,<3.0.0" ]
 
 [dependency-groups]

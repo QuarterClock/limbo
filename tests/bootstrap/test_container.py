@@ -3,29 +3,39 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from pathlib import Path
 
-from limbo_core.application.interfaces.persistence import (
-    PersistenceWriteBackend,
-)
+from limbo_core.application.interfaces.persistence import DataPersistenceBackend
 from limbo_core.bootstrap import Container, get_container
+from limbo_core.domain.value_objects import (  # noqa: TC001
+    ResolvedStorageRef,
+    TabularBatch,
+)
 
 
 @dataclass(slots=True)
-class _StubWriteBackend(PersistenceWriteBackend):
-    store: dict[str, Any] = field(default_factory=dict)
+class _StubWriteBackend(DataPersistenceBackend):
+    store: dict[str, TabularBatch] = field(default_factory=dict)
+    _root: Path = field(default_factory=lambda: Path("/__limbo_stub__"))
 
-    def save(self, name: str, data: Any) -> None:
-        self.store[name] = data
+    @property
+    def directory(self) -> Path:
+        return self._root
 
-    def load(self, name: str) -> Any:
-        return self.store[name]
+    def storage_object_name(self, logical_name: str) -> str:
+        return logical_name
 
-    def exists(self, name: str) -> bool:
-        return name in self.store
+    def save(self, ref: ResolvedStorageRef, data: TabularBatch) -> None:
+        self.store[ref.as_local_path().name] = data
 
-    def cleanup(self, name: str) -> None:
-        self.store.pop(name, None)
+    def load(self, ref: ResolvedStorageRef) -> TabularBatch:
+        return self.store[ref.as_local_path().name]
+
+    def exists(self, ref: ResolvedStorageRef) -> bool:
+        return ref.as_local_path().name in self.store
+
+    def cleanup(self, ref: ResolvedStorageRef) -> None:
+        self.store.pop(ref.as_local_path().name, None)
 
 
 class TestContainer:
@@ -40,7 +50,7 @@ class TestContainer:
     def test_load_project_delegates_to_loader_service(self) -> None:
         """Container.load_project returns parsed project from wired service."""
         container = Container()
-        container.persistence_write_registry.register(
+        container.data_persistence_registry.register(
             "memory", _StubWriteBackend
         )
         payload = {
