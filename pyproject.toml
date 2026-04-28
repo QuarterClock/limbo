@@ -39,7 +39,7 @@ optional-dependencies.sqlalchemy = [ "sqlalchemy>=2.0.0,<3.0.0" ]
 
 [dependency-groups]
 dev = [
-    "pre-commit==4.5.1",
+    "pre-commit==4.6.0",
     { include-group = "codespell" },
     { include-group = "linting" },
     { include-group = "markdown" },
@@ -47,10 +47,10 @@ dev = [
     { include-group = "typing" },
 ]
 codespell = [ "codespell==2.4.2" ]
-linting = [ "pyproject-fmt==2.20.0", "ruff==0.15.7" ]
-markdown = [ "rumdl==0.1.59" ]
-tests = [ "pytest==9.0.2", "pytest-cov==7.1.0" ]
-typing = [ "mypy==1.19.1" ]
+linting = [ "pyproject-fmt==2.21.1", "ruff==0.15.12" ]
+markdown = [ "rumdl==0.1.84" ]
+tests = [ "pytest==9.0.3", "pytest-cov==7.1.0" ]
+typing = [ "mypy==1.20.2" ]
 
 [tool.ruff]
 # Assume Python 3.11
