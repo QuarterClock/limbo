@@ -32,7 +32,7 @@
         },
         {
             "description": "Group all renovate-config-presets updates into a single PR",
-            "matchManagers": ["renovate-config-presets"],
+            "matchManagers": ["renovate-config"],
             "groupName": "renovate-config-presets"
         },
         {
