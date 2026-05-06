@@ -34,7 +34,7 @@ classifiers = [
 ]
 dependencies = [ "pluggy>=1.6.0,<2.0.0" ]
 optional-dependencies.orjson = [ "orjson>=3.9.0,<4.0.0" ]
-optional-dependencies.pyarrow = [ "pyarrow>=22.0.0,<24.0.0" ]
+optional-dependencies.pyarrow = [ "pyarrow>=24.0.0,<24.1.0" ]
 optional-dependencies.sqlalchemy = [ "sqlalchemy>=2.0.0,<3.0.0" ]
 
 [dependency-groups]
@@ -50,7 +50,7 @@ codespell = [ "codespell==2.4.2" ]
 linting = [ "pyproject-fmt==2.20.0", "ruff==0.15.7" ]
 markdown = [ "rumdl==0.1.59" ]
 tests = [ "pytest==9.0.2", "pytest-cov==7.1.0" ]
-typing = [ "mypy==1.19.1" ]
+typing = [ "mypy==2.0.0" ]
 
 [tool.ruff]
 # Assume Python 3.11
